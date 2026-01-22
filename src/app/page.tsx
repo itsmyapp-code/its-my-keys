@@ -1,65 +1,302 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect } from "react";
+import { useInventory } from "@/contexts/InventoryContext";
+import { KeyItem, Asset, AssetType } from "@/types";
+import { KeyActionModal } from "@/components/dashboard/KeyActionModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
+
+export default function Dashboard() {
+  const { assets, loading, search } = useInventory();
+  const { profile } = useAuth();
+  const [query, setQuery] = useState("");
+
+  // Modal State
+  const [selectedKey, setSelectedKey] = useState<KeyItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Visibility Settings
+  const [visibility, setVisibility] = useState({
+    keys: true,
+    itDevices: true,
+    vehicles: true,
+    rentals: true
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!profile?.orgId) return;
+      try {
+        const snap = await getDoc(doc(db, "organizations", profile.orgId));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.settings?.dashboardVisibility) {
+            setVisibility(data.settings.dashboardVisibility);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard settings", err);
+      }
+    };
+    fetchSettings();
+  }, [profile?.orgId]);
+
+  const results = search(query);
+  const displayAssets = query ? results.assets : assets;
+
+  // Grouping
+  const grouped = {
+    [AssetType.KEY]: displayAssets.filter(a => a.type === AssetType.KEY || !a.type), // Default to Key
+    [AssetType.IT_DEVICE]: displayAssets.filter(a => a.type === AssetType.IT_DEVICE),
+    [AssetType.VEHICLE]: displayAssets.filter(a => a.type === AssetType.VEHICLE),
+    [AssetType.RENTAL]: displayAssets.filter(a => a.type === AssetType.RENTAL),
+  };
+
+  const handleKeyClick = (keyItem: KeyItem) => {
+    setSelectedKey(keyItem);
+    setIsModalOpen(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center p-10">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-8 pb-10">
+      {/* Header & Search */}
+      <div className="sticky top-0 z-30 bg-gray-50/95 pb-4 pt-2 backdrop-blur dark:bg-gray-900/95">
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="search"
+            className="block w-full rounded-lg border border-gray-300 bg-white p-4 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="Search assets, holders, or details..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      {/* Keys Definition */}
+      {visibility.keys && (grouped[AssetType.KEY].length > 0 || query) && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100 text-yellow-600">
+              🔑
+            </span>
+            Keys
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {grouped[AssetType.KEY].map(asset => (
+              <KeyCard key={asset.id} asset={asset} onClick={() => handleKeyClick(asset)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* IT Devices Definition */}
+      {visibility.itDevices && (grouped[AssetType.IT_DEVICE].length > 0) && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+              💻
+            </span>
+            IT Devices
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {grouped[AssetType.IT_DEVICE].map(asset => (
+              <ITCard key={asset.id} asset={asset} onClick={() => handleKeyClick(asset)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Vehicles Definition */}
+      {visibility.vehicles && (grouped[AssetType.VEHICLE].length > 0) && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600">
+              🚗
+            </span>
+            Vehicles
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {grouped[AssetType.VEHICLE].map(asset => (
+              <VehicleCard key={asset.id} asset={asset} onClick={() => handleKeyClick(asset)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Rentals Definition */}
+      {visibility.rentals && (grouped[AssetType.RENTAL].length > 0) && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600">
+              🏠
+            </span>
+            Rentals
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {grouped[AssetType.RENTAL].map(asset => (
+              <RentalCard key={asset.id} asset={asset} onClick={() => handleKeyClick(asset)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {Object.values(grouped).every(g => g.length === 0) && (
+        <div className="col-span-full py-10 text-center text-gray-500 dark:text-gray-400">
+          <p>No assets found matched your preferences or search.</p>
         </div>
-      </main>
+      )}
+
+      {/* Transaction Modal */}
+      <KeyActionModal
+        keyItem={selectedKey}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        orgId={profile?.orgId || ""}
+      />
+    </div>
+  );
+}
+
+// --- Specialized Cards ---
+
+function KeyCard({ asset, onClick }: { asset: Asset, onClick: () => void }) {
+  const meta = asset.metaData || {};
+  return (
+    <BaseCard asset={asset} onClick={onClick}>
+      <div className="mb-2">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{asset.name}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{meta.location || "General"}</p>
+      </div>
+      {meta.keyCode && (
+        <div className="mb-3">
+          <span className="inline-block rounded bg-purple-100 px-2 py-1 text-sm font-bold text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+            {meta.keyCode}
+          </span>
+        </div>
+      )}
+    </BaseCard>
+  );
+}
+
+function ITCard({ asset, onClick }: { asset: Asset, onClick: () => void }) {
+  const meta = asset.metaData || {};
+  return (
+    <BaseCard asset={asset} onClick={onClick}>
+      <div className="mb-2">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{meta.modelName || asset.name}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{meta.type || "Device"}</p>
+      </div>
+      <div className="mb-3 space-y-1">
+        {(meta.serialNumber || meta.assetTag) && (
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="font-mono bg-gray-100 px-1 rounded dark:bg-gray-700">
+              {meta.assetTag || "No Tag"}
+            </span>
+            <span>SN: {meta.serialNumber || "N/A"}</span>
+          </div>
+        )}
+      </div>
+    </BaseCard>
+  );
+}
+
+function VehicleCard({ asset, onClick }: { asset: Asset, onClick: () => void }) {
+  const meta = asset.metaData || {};
+  return (
+    <BaseCard asset={asset} onClick={onClick}>
+      <div className="mb-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-black uppercase text-gray-900 dark:text-white tracking-wider">
+            {meta.registrationPlate || asset.name}
+          </h3>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{meta.make} {meta.model}</p>
+      </div>
+      <div className="mb-3">
+        <span className="text-xs text-gray-400">Driver:</span>
+        <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">{meta.assignedDriver || "Unassigned"}</span>
+      </div>
+    </BaseCard>
+  );
+}
+
+function RentalCard({ asset, onClick }: { asset: Asset, onClick: () => void }) {
+  const meta = asset.metaData || {};
+  return (
+    <BaseCard asset={asset} onClick={onClick}>
+      <div className="mb-2">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{asset.name}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{meta.unitNumber || "Unit N/A"}</p>
+      </div>
+      <div className="mb-3">
+        <div className="text-xs text-gray-400">Tenant</div>
+        <div className="font-medium text-gray-900 dark:text-white">{meta.tenantName || "Vacant"}</div>
+      </div>
+    </BaseCard>
+  );
+}
+
+// --- Shared Base Card ---
+function BaseCard({ asset, onClick, children }: { asset: Asset, onClick: () => void, children: React.ReactNode }) {
+  const isAvailable = asset.status === "AVAILABLE";
+  const meta = asset.metaData || {};
+
+  return (
+    <div className="flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          {children}
+        </div>
+        <div className={`ml-2 flex-shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${isAvailable
+            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+            : asset.status === "MISSING"
+              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+          }`}>
+          {(asset.status || "UNKNOWN").replace(/_/g, " ")}
+        </div>
+      </div>
+
+      <div className="mt-auto border-t border-gray-100 pt-3 dark:border-gray-700">
+        {!isAvailable && (
+          <div className="mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Current Holder</span>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
+                {(meta.currentHolder?.[0] || "?").toUpperCase()}
+              </div>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                {meta.currentHolder || "Unknown"}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={onClick}
+          className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isAvailable
+            ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+            : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+            }`}
+        >
+          {isAvailable ? "Check Out / Assign" : "Return / Update"}
+        </button>
+      </div>
     </div>
   );
 }
