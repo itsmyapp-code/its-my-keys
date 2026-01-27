@@ -256,9 +256,9 @@ function KeyGroupCard({ group, onAction }: {
         {checkedOutKeys.length > 0 ? (
           <div className="space-y-3">
             {checkedOutKeys.map(k => (
-              <div key={k.id} className="flex items-center justify-between gap-2 text-sm">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className={`h-6 w-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${k.status === 'MISSING' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'
+              <div key={k.id} className="flex items-start justify-between gap-2 text-sm">
+                <div className="flex items-start gap-2 min-w-0">
+                  <div className={`mt-1 h-6 w-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${k.status === 'MISSING' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'
                     }`}>
                     {k.status === 'MISSING' ? 'M' : (k.metaData?.currentHolder?.[0] || "?").toUpperCase()}
                   </div>
@@ -269,11 +269,21 @@ function KeyGroupCard({ group, onAction }: {
                     {k.metaData?.keyCode && (
                       <div className="text-xs text-gray-400">Tag: {k.metaData.keyCode}</div>
                     )}
-                    {k.metaData?.checkedOutAt && (
-                      <div className="text-xs text-blue-500">
-                        Out: {k.metaData.checkedOutAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    )}
+
+                    <div className="mt-1 flex flex-col gap-0.5">
+                      {k.metaData?.checkedOutAt && (
+                        <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                          <span className="w-6 opacity-75">Out:</span>
+                          <span>{k.metaData.checkedOutAt.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      )}
+                      {k.metaData?.dueDate && (
+                        <div className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                          <span className="w-6 opacity-75">Due:</span>
+                          <span>{k.metaData.dueDate.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <button
@@ -333,6 +343,8 @@ function ITCard({ asset, onClick }: { asset: Asset, onClick: () => void }) {
 
 function VehicleCard({ asset, onClick }: { asset: Asset, onClick: () => void }) {
   const meta = asset.metaData || {};
+  const isCheckedOut = asset.status === 'CHECKED_OUT';
+
   return (
     <BaseCard asset={asset} onClick={onClick}>
       <div className="mb-2">
@@ -343,10 +355,13 @@ function VehicleCard({ asset, onClick }: { asset: Asset, onClick: () => void }) 
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">{meta.make} {meta.model}</p>
       </div>
-      <div className="mb-3">
-        <span className="text-xs text-gray-400">Driver:</span>
-        <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">{meta.assignedDriver || "Unassigned"}</span>
-      </div>
+      {/* Driver Display - Only show assigned driver if NOT checked out (prevent redundancy) */}
+      {!isCheckedOut && meta.assignedDriver && (
+        <div className="mb-3">
+          <span className="text-xs text-gray-400">Assigned Driver:</span>
+          <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">{meta.assignedDriver}</span>
+        </div>
+      )}
     </BaseCard>
   );
 }
@@ -391,14 +406,32 @@ function BaseCard({ asset, onClick, children }: { asset: Asset, onClick: () => v
       <div className="mt-auto border-t border-gray-100 pt-3 dark:border-gray-700">
         {!isAvailable && (
           <div className="mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Current Holder</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              {asset.type === 'VEHICLE' ? 'Current Driver' : 'Current Holder'}
+            </span>
             <div className="flex items-center gap-2 mt-1">
-              <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
+              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
                 {(meta.currentHolder?.[0] || "?").toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                {meta.currentHolder || "Unknown"}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {meta.currentHolder || "Unknown"}
+                </span>
+
+                {/* Timestamps */}
+                <div className="flex gap-3 text-[10px] mt-0.5">
+                  {meta.checkedOutAt && (
+                    <span className="text-blue-600 dark:text-blue-400">
+                      Out: {meta.checkedOutAt.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                  {meta.dueDate && (
+                    <span className="text-orange-600 dark:text-orange-400">
+                      Due: {meta.dueDate.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}

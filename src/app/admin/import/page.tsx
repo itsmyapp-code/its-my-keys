@@ -93,7 +93,7 @@ export default function ImportPage() {
                         orgId: profile.orgId,
                         name: row.asset_name,
                         area: row.location,
-                        type: AssetType.RENTAL, // Defaulting to Rental/Facility for these types of imports
+                        type: AssetType.FACILITY, // Use FACILITY for these generic parents so they don't clog up the Rentals list
                         status: AssetStatus.AVAILABLE,
                         totalKeys: row.quantity,
                         metaData: {}

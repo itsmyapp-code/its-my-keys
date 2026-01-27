@@ -6,7 +6,8 @@ export enum AssetType {
     KEY = 'KEY',
     IT_DEVICE = 'IT_DEVICE',
     VEHICLE = 'VEHICLE',
-    RENTAL = 'RENTAL'
+    RENTAL = 'RENTAL',
+    FACILITY = 'FACILITY' // For Locks / Doors / Buildings that default hold keys
 }
 
 export enum AssetStatus {
