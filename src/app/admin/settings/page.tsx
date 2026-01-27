@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-
-
+import { AssetType } from "@/types";
 
 const SettingsPage = () => {
     const { user, profile } = useAuth();
@@ -19,6 +18,10 @@ const SettingsPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
+
+    // Maintenance State
+    const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+    const [auditMsg, setAuditMsg] = useState("");
 
     // Fetch Org Details
     useEffect(() => {
@@ -74,6 +77,50 @@ const SettingsPage = () => {
         }
     };
 
+    const handleMigrateParents = async () => {
+        if (!profile?.orgId) return;
+        if (!confirm("This will convert all 'Rentals' that act as Parent Keys (e.g. locks) into 'Facilities'. Proceed?")) return;
+
+        setMaintenanceLoading(true);
+        setAuditMsg("Scanning assets...");
+
+        try {
+            // Find Rentals that have totalKeys property (meaning they are parents/groups)
+            const q = query(collection(db, "assets"), where("orgId", "==", profile.orgId), where("type", "==", AssetType.RENTAL));
+            const snapshot = await getDocs(q);
+
+            const toMigrate = snapshot.docs.filter(d => {
+                const data = d.data();
+                // If it has 'totalKeys' (even if 0) it's likely a parent structure created by import
+                return data.totalKeys !== undefined;
+            });
+
+            if (toMigrate.length === 0) {
+                setAuditMsg("No eligible assets found to migrate.");
+                setMaintenanceLoading(false);
+                return;
+            }
+
+            setAuditMsg(`Migrating ${toMigrate.length} assets...`);
+
+            const { writeBatch } = await import("firebase/firestore");
+            const batch = writeBatch(db);
+
+            toMigrate.forEach(docSnap => {
+                batch.update(docSnap.ref, { type: AssetType.FACILITY });
+            });
+
+            await batch.commit();
+            setAuditMsg(`Success! Migrated ${toMigrate.length} assets to Facility type.`);
+
+        } catch (err: any) {
+            console.error(err);
+            setAuditMsg("Migration failed: " + err.message);
+        } finally {
+            setMaintenanceLoading(false);
+        }
+    };
+
     if (loading) return <div className="p-8">Loading settings...</div>;
 
     return (
@@ -95,7 +142,6 @@ const SettingsPage = () => {
                 </div>
             </div>
 
-            {/* Organization Settings */}
             {/* Organization Settings */}
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                 <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">General Settings</h2>
@@ -181,8 +227,38 @@ const SettingsPage = () => {
                     </div>
                 </form>
             </div>
+
+            {/* Maintenance Zone */}
+            <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm dark:border-red-900/30 dark:bg-red-900/10">
+                <h2 className="mb-2 text-lg font-semibold text-red-700 dark:text-red-400">Maintenance Zone</h2>
+                <p className="mb-4 text-sm text-red-600 dark:text-red-300">
+                    Tools to fix data issues. Use with caution.
+                </p>
+
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100 dark:bg-gray-800 dark:border-gray-700">
+                        <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white">Migrate Key Parents</h4>
+                            <p className="text-xs text-gray-500">Converts "Rental" items that hold keys into "Facilities". Fixes "Keys appearing as Rentals" issue.</p>
+                        </div>
+                        <button
+                            onClick={handleMigrateParents}
+                            disabled={maintenanceLoading}
+                            className="px-3 py-1.5 text-xs font-bold bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                            {maintenanceLoading ? "Scanning..." : "Run Migration"}
+                        </button>
+                    </div>
+
+                    {auditMsg && (
+                        <div className="text-xs font-mono p-2 bg-gray-100 rounded dark:bg-gray-800 dark:text-gray-300">
+                            {auditMsg}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
-}
+};
 
 export default SettingsPage;

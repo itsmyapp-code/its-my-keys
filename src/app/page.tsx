@@ -51,7 +51,7 @@ export default function Dashboard() {
     [AssetType.KEY]: displayAssets.filter(a => a.type === AssetType.KEY || !a.type), // Default to Key
     [AssetType.IT_DEVICE]: displayAssets.filter(a => a.type === AssetType.IT_DEVICE),
     [AssetType.VEHICLE]: displayAssets.filter(a => a.type === AssetType.VEHICLE),
-    [AssetType.RENTAL]: displayAssets.filter(a => a.type === AssetType.RENTAL),
+    [AssetType.RENTAL]: displayAssets.filter(a => a.type === AssetType.RENTAL && !a.totalKeys), // Hide generic parents (which have totalKeys) from Rentals list
   };
 
   // derived grouped keys
