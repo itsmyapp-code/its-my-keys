@@ -38,6 +38,8 @@ export interface Asset {
     orgId: string;
     name: string; // e.g., "Front Door Key", "MacBook Pro #42"
     type: AssetType;
+    area?: string;
+    totalKeys?: number;
     status: AssetStatus;
     metaData: Record<string, any>; // Polymorphic fields
     qrCode?: string;
@@ -59,3 +61,14 @@ export interface Log {
 }
 
 export type KeyItem = Asset; // Backwards compatibility for InventoryContext
+
+export type KeyStatus = AssetStatus | 'AVAILABLE' | 'CHECKED_OUT' | 'MISSING' | 'MAINTENANCE' | 'RETIRED';
+
+export type LoanType = 'STANDARD' | '1_HOUR' | '4_HOURS' | 'EOD' | 'INDEFINITE' | 'LONG_TERM' | 'PERMANENT';
+
+export interface Audit {
+    id: string;
+    date: Timestamp;
+    performedBy: string;
+    missingKeys: string[];
+}

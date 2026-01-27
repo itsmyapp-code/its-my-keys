@@ -21,7 +21,7 @@ export const AssetService = {
     /**
      * Create a new asset with polymorphic metadata
      */
-    createAsset: async (assetData: Omit<Asset, "id" | "createdAt" | "updatedAt"> & { orgId: string }) => {
+    createAsset: async (assetData: Omit<Asset, "id" | "createdAt" | "updatedAt" | "searchKeywords"> & { orgId: string }) => {
         // Create search keywords from name and specific metadata
         const searchKeywords = generateSearchKeywords(assetData);
 

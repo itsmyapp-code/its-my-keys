@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useInventory } from "@/contexts/InventoryContext";
-import { createAsset, createKey } from "@/lib/firestore/services";
+import { AssetService } from "@/lib/services/AssetService";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
+import { AssetStatus, AssetType } from "@/types";
 
 export default function AddKeyPage() {
     const router = useRouter();
@@ -26,7 +27,7 @@ export default function AddKeyPage() {
     useEffect(() => {
         const existingAsset = assets.find(a => a.name.toLowerCase() === formData.assetName.toLowerCase());
         if (existingAsset && !formData.area) {
-            setFormData(prev => ({ ...prev, area: existingAsset.area }));
+            setFormData(prev => ({ ...prev, area: existingAsset.area || "" }));
         }
     }, [formData.assetName, assets, formData.area]);
 
@@ -53,39 +54,36 @@ export default function AddKeyPage() {
             if (existingAsset) {
                 assetId = existingAsset.id;
             } else {
-                // Create new asset
-                // Note: In real app, might want to confirm with user before creating new Asset type.
-                const newAsset = await createAsset(profile.orgId, {
+                // Create new asset using AssetService
+                const newAsset = await AssetService.createAsset({
+                    orgId: profile.orgId,
                     name: formData.assetName,
                     area: formData.area || "General",
-                    totalKeys: 1 // Starting with 1
+                    type: AssetType.RENTAL, // Defaulting to Rental/Facility? Or create a new type. Using RENTAL as placeholder.
+                    status: AssetStatus.AVAILABLE,
+                    metaData: {},
+                    totalKeys: 1
                 });
                 assetId = newAsset.id;
             }
 
-            // 2. Create Key
-            await createKey(profile.orgId, {
-                // id will be auto-generated
-                // @ts-ignore - Temporary cast until services are fully typed
-                name: formData.keyId, // Key name should be the ID/Tag
-                type: "KEY",
-                status: "AVAILABLE",
+            // 2. Create Key using AssetService
+            await AssetService.createAsset({
+                orgId: profile.orgId,
+                name: formData.keyId,
+                type: AssetType.KEY,
+                status: AssetStatus.AVAILABLE,
+                area: formData.area || (existingAsset?.area || "General"),
                 metaData: {
                     keyCode: formData.keyId,
                     assetId: assetId,
                     location: formData.area || (existingAsset?.area || "General"),
                     loanType: "STANDARD",
-                },
-                searchKeywords: [formData.keyId, formData.assetName],
-                createdAt: Timestamp.now(),
-                updatedAt: Timestamp.now()
+                }
             });
 
             setSuccess(`Successfully added Key ${formData.keyId}`);
             setFormData({ keyId: "", assetName: "", area: "" }); // Reset
-
-            // Optional: Redirect or stay to add more?
-            // Staying is better for batch entry.
         } catch (err: any) {
             console.error(err);
             setError(err.message || "Failed to create key.");

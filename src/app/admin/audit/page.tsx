@@ -35,7 +35,7 @@ export default function AuditPage() {
 
         const groups: Record<string, KeyItem[]> = {};
         expectedKeys.forEach(k => {
-            const code = k.shortCode || k.id;
+            const code = k.metaData?.keyCode || k.id;
             if (!groups[code]) groups[code] = [];
             groups[code].push(k);
         });
@@ -117,7 +117,7 @@ export default function AuditPage() {
                     // Find key details
                     const k = keys.find(key => key.id === id);
                     if (k) {
-                        missingData.push([k.shortCode, k.id, k.assetName, k.area]);
+                        missingData.push([k.metaData?.keyCode || k.id, k.id, k.metaData?.assetId || '-', k.area || k.metaData?.location || '-']);
                     }
                 });
 
@@ -202,7 +202,7 @@ export default function AuditPage() {
                         const isOver = entered > expected;
 
                         // Collect asset names uniquely
-                        const assetNames = Array.from(new Set(items.map(k => k.assetName))).join(", ");
+                        const assetNames = Array.from(new Set(items.map(k => k.metaData?.assetId || k.name))).join(", ");
 
                         return (
                             <div key={code} className={`grid grid-cols-12 gap-4 items-center p-4 transition-colors ${isMatch ? "bg-green-50/50 dark:bg-green-900/10" : ""}`}>
@@ -213,7 +213,7 @@ export default function AuditPage() {
                                 </div>
                                 <div className="col-span-5">
                                     <h4 className="font-medium text-gray-900 dark:text-white">{assetNames}</h4>
-                                    <p className="text-xs text-gray-500">{items[0]?.area}</p>
+                                    <p className="text-xs text-gray-500">{items[0]?.area || items[0]?.metaData?.location}</p>
                                 </div>
                                 <div className="col-span-2 text-center font-medium text-gray-600 dark:text-gray-400">
                                     {expected}

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AssetService } from "@/lib/services/AssetService";
-import { AssetType } from "@/types";
+import { AssetType, AssetStatus } from "@/types";
 
 export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
     const { profile } = useAuth();
@@ -34,7 +34,7 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
                 orgId: profile.orgId,
                 name,
                 type,
-                status: "AVAILABLE", // Default
+                status: AssetStatus.AVAILABLE, // Default
                 qrCode: qrCode || undefined,
                 metaData: metadata,
             });

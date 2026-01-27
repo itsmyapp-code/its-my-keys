@@ -3,7 +3,9 @@ import { Asset, KeyItem, Audit, Organization } from "@/types";
 
 export const assetConverter: FirestoreDataConverter<Asset> = {
     toFirestore(asset: Asset): DocumentData {
-        return { ...asset };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...data } = asset;
+        return data;
     },
     fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Asset {
         const data = snapshot.data(options);
@@ -25,34 +27,9 @@ export const assetConverter: FirestoreDataConverter<Asset> = {
     },
 };
 
-export const keyConverter: FirestoreDataConverter<KeyItem> = {
-    toFirestore(key: KeyItem): DocumentData {
-        const { id, ...data } = key;
-        return data; // 'shortCode' is part of data now
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): KeyItem {
-        const data = snapshot.data(options);
-        return {
-            id: snapshot.id,
-            shortCode: data.shortCode || snapshot.id, // Fallback for old keys
-            assetId: data.assetId,
-            assetName: data.assetName,
-            area: data.area,
-            status: data.status,
-            currentHolder: data.currentHolder,
-            holderCompany: data.holderCompany || null,
-            loanType: data.loanType,
-            dueDate: data.dueDate,
-            lastAuditDate: data.lastAuditDate,
-            missingSince: data.missingSince || null,
-            missingReason: data.missingReason || null,
-            checkedOutAt: data.checkedOutAt || null,
-        };
-    },
-};
-
 export const auditConverter: FirestoreDataConverter<Audit> = {
     toFirestore(audit: Audit): DocumentData {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id, ...data } = audit;
         return data;
     },

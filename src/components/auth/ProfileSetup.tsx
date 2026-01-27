@@ -43,7 +43,7 @@ export function ProfileSetup() {
                 displayName: user.displayName || "Admin",
                 orgId: orgId,
                 role: "SUPER_ADMIN",
-                photoURL: user.photoURL || null
+                photoURL: user.photoURL || undefined
             };
 
             // Add user profile creation to batch

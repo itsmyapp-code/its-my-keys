@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { Asset, KeyItem, Audit, KeyStatus, LoanType } from "@/types";
-import { assetConverter, keyConverter, auditConverter } from "./converters";
+import { assetConverter, auditConverter } from "./converters";
 
 // Helper to get collection refs
 const getAssetsCollection = () => collection(db, "assets").withConverter(assetConverter); // Use top-level collection
@@ -103,7 +103,7 @@ export const createAudit = async (orgId: string, audit: Omit<Audit, "id">) => {
     // Audits might still be subcollection or top-level. Let's keep them top-level for consistency if possible, 
     // or sub-collection of the organization. Let's start with subcollection of Org for Audits as they are not "Assets".
     const auditsRef = collection(db, "organizations", orgId, "audits").withConverter(auditConverter);
-    await addDoc(auditsRef, audit);
+    await addDoc(auditsRef, { ...audit, id: "" } as Audit);
 };
 
 export const updateKeyAuditDate = async (orgId: string, keyId: string) => {
@@ -118,7 +118,7 @@ export const updateKeyAuditDate = async (orgId: string, keyId: string) => {
 export const createAsset = async (orgId: string, asset: Omit<Asset, "id">) => {
     const assetsRef = getAssetsCollection();
     // Ensure orgId is attached
-    return await addDoc(assetsRef, { ...asset, orgId });
+    return await addDoc(assetsRef, { ...asset, orgId, id: "" } as Asset);
 };
 
 export const createKey = async (orgId: string, key: Omit<KeyItem, "id">) => {
@@ -127,6 +127,7 @@ export const createKey = async (orgId: string, key: Omit<KeyItem, "id">) => {
     await addDoc(assetsRef, {
         ...key,
         type: "KEY",
-        orgId
-    });
+        orgId,
+        id: ""
+    } as Asset);
 };

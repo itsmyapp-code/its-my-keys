@@ -20,8 +20,8 @@ export default function ReportsPage() {
             if (b.status === "MISSING" && a.status !== "MISSING") return 1;
 
             const now = new Date().getTime();
-            const aOverdue = a.dueDate && a.dueDate.toDate().getTime() < now;
-            const bOverdue = b.dueDate && b.dueDate.toDate().getTime() < now;
+            const aOverdue = a.metaData?.dueDate && a.metaData.dueDate.toDate().getTime() < now;
+            const bOverdue = b.metaData?.dueDate && b.metaData.dueDate.toDate().getTime() < now;
 
             if (aOverdue && !bOverdue) return -1;
             if (!aOverdue && bOverdue) return 1;
@@ -76,7 +76,7 @@ export default function ReportsPage() {
                 if (data.section === 'body') {
                     const rowKeyId = activeKeys[data.row.index];
                     const isMissing = rowKeyId.status === "MISSING";
-                    const isOverdue = !isMissing && rowKeyId.dueDate && rowKeyId.dueDate.toDate() < now;
+                    const isOverdue = !isMissing && rowKeyId.metaData?.dueDate && rowKeyId.metaData.dueDate.toDate() < now;
 
                     if (isMissing) {
                         data.cell.styles.textColor = [200, 0, 0]; // Red
