@@ -5,15 +5,41 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createAsset, createKey } from "@/lib/firestore/services";
 import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { Asset } from "@/types";
+import { Asset, AssetType, AssetStatus } from "@/types";
 
 export default function ImportPage() {
     const { user, profile } = useAuth();
     const [csvContent, setCsvContent] = useState("");
     const [importing, setImporting] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
+    const [isClearing, setIsClearing] = useState(false);
 
     const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
+
+    const handleClearDatabase = async () => {
+        if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.includes("demo") &&
+            !confirm("DANGER: This will delete ALL keys and assets for your organization. This cannot be undone. Are you sure?")) {
+            return;
+        }
+
+        if (!profile?.orgId) return;
+
+        setIsClearing(true);
+        try {
+            // Dynamically import to avoid circular dep issues or just use Service
+            // We need to use AssetService here, but first we need to export it properly or import it
+            // Assuming AssetService is available via import
+            const { AssetService } = await import("@/lib/services/AssetService");
+            await AssetService.deleteAllAssets(profile.orgId);
+            addLog("Database cleared successfully.");
+            alert("All assets have been deleted.");
+        } catch (err: any) {
+            console.error(err);
+            addLog(`Error clearing database: ${err.message}`);
+        } finally {
+            setIsClearing(false);
+        }
+    };
 
     const handleImport = async () => {
         if (!csvContent.trim()) return;
@@ -27,71 +53,77 @@ export default function ImportPage() {
         addLog("Starting import...");
 
         try {
-            const lines = csvContent.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("key_id"));
+            const lines = csvContent.split("\n").map(l => l.trim()).filter(l => l && !l.toLowerCase().startsWith("key id"));
 
-            // 1. Parse
+            // 1. Parse: Key ID, Asset Name, Location, Quantity
             const rows = lines.map(line => {
-                const [key_id, asset_name, area, color] = line.split(",").map(c => c.trim());
-                return { key_id, asset_name, area };
+                // Split by comma, but be careful with quotes if needed (simple split for now)
+                const [key_id, asset_name, location, qtyStr] = line.split(",").map(c => c.trim());
+                const quantity = parseInt(qtyStr) || 1;
+                return { key_id, asset_name, location: location || asset_name, quantity };
             }).filter(r => r.key_id && r.asset_name);
 
             addLog(`Parsed ${rows.length} rows to process.`);
 
             // 2. Pre-fetch Assets
-            // Filter by OrgId
-            const assetsSnapshot = await getDocs(query(collection(db, "assets"), where("orgId", "==", profile.orgId)));
+            const { AssetService } = await import("@/lib/services/AssetService");
             const assetMap = new Map<string, { id: string }>();
-            assetsSnapshot.forEach(doc => {
-                const d = doc.data() as Asset;
-                if (d.name) assetMap.set(d.name.toLowerCase(), { id: doc.id });
+
+            // Get existing assets to avoid duplicates or to link
+            const existingAssets = await AssetService.getAssetsByOrg(profile.orgId);
+            existingAssets.forEach(a => {
+                if (a.name) assetMap.set(a.name.toLowerCase(), { id: a.id });
             });
 
             // 3. Process
-            let createdCount = 0;
+            let createdKeysCount = 0;
+            let createdAssetsCount = 0;
+
             for (const row of rows) {
                 let assetId = "";
 
+                // Find or Create Parent Asset (The Lock/Door)
                 if (assetMap.has(row.asset_name.toLowerCase())) {
                     const a = assetMap.get(row.asset_name.toLowerCase())!;
                     assetId = a.id;
                 } else {
                     // Create Asset
                     addLog(`Creating new asset: ${row.asset_name}`);
-                    const res = await createAsset(profile.orgId, {
+                    const newAsset = await AssetService.createAsset({
+                        orgId: profile.orgId,
                         name: row.asset_name,
-                        area: row.area || "General",
-                        type: "KEY", // Assuming these are doors for keys
-                        status: "AVAILABLE",
-                        metaData: {},
-                        searchKeywords: [row.asset_name],
-                        createdAt: Timestamp.now(),
-                        updatedAt: Timestamp.now()
-                    } as any); // Casting as Asset, creating without ID first
-                    assetId = res.id;
+                        area: row.location,
+                        type: AssetType.RENTAL, // Defaulting to Rental/Facility for these types of imports
+                        status: AssetStatus.AVAILABLE,
+                        totalKeys: row.quantity,
+                        metaData: {}
+                    });
+                    assetId = newAsset.id;
                     assetMap.set(row.asset_name.toLowerCase(), { id: assetId });
+                    createdAssetsCount++;
                 }
 
-                // Create Key
-                // Allow multiples (same code is fine)
-                await createKey(profile.orgId, {
-                    name: row.key_id, // Use name for the visual ID on the key
-                    type: "KEY",
-                    status: "AVAILABLE",
-                    metaData: {
-                        keyCode: row.key_id,
-                        assetId: assetId,
-                        location: row.area || "General",
-                        loanType: "STANDARD",
-                    },
-                    searchKeywords: [row.key_id, row.asset_name],
-                    createdAt: Timestamp.now(),
-                    updatedAt: Timestamp.now()
-                } as any);
-
-                createdCount++;
+                // Create Keys
+                addLog(`Creating ${row.quantity} keys for ${row.key_id}...`);
+                for (let i = 0; i < row.quantity; i++) {
+                    await AssetService.createAsset({
+                        orgId: profile.orgId,
+                        name: row.key_id, // Use the Tag as the name
+                        type: AssetType.KEY,
+                        status: AssetStatus.AVAILABLE,
+                        area: row.location,
+                        metaData: {
+                            keyCode: row.key_id,
+                            assetId: assetId,
+                            location: row.location,
+                            loanType: "STANDARD",
+                        }
+                    });
+                    createdKeysCount++;
+                }
             }
 
-            addLog(`Successfully imported ${createdCount} keys.`);
+            addLog(`Successfully imported ${createdAssetsCount} Assets and ${createdKeysCount} Keys.`);
         } catch (err: any) {
             console.error(err);
             addLog(`Error: ${err.message}`);
@@ -103,8 +135,19 @@ export default function ImportPage() {
     return (
         <div className="mx-auto max-w-3xl p-6">
             <h1 className="mb-4 text-2xl font-bold dark:text-white">Import Keys (CSV)</h1>
+
+            <div className="mb-6 flex justify-end">
+                <button
+                    onClick={handleClearDatabase}
+                    disabled={isClearing || importing}
+                    className="text-sm text-red-600 hover:text-red-800 underline disabled:opacity-50"
+                >
+                    {isClearing ? "Clearing..." : "Clear All Data (Reset)"}
+                </button>
+            </div>
+
             <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Paste CSV content. Format: <code>key_id, asset_name, area, color</code>
+                Paste CSV content. Format: <code>Key ID, Name, Location, Quantity</code>
             </p>
 
             <div className="mb-4">
@@ -112,13 +155,13 @@ export default function ImportPage() {
                     className="h-64 w-full rounded-lg border border-gray-300 p-4 font-mono text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     value={csvContent}
                     onChange={e => setCsvContent(e.target.value)}
-                    placeholder={`101, Main Entrance, Block A, Red\n102, Main Entrance, Block A, Red\n205, Server Room, Block B, Blue`}
+                    placeholder={`A1, Bedroom 1, 58 Victoria Road, 5\nMAS, Master Key, 58 Victoria Road, 4`}
                 />
             </div>
 
             <button
                 onClick={handleImport}
-                disabled={importing}
+                disabled={importing || isClearing}
                 className="rounded-lg bg-blue-600 px-6 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
                 {importing ? "Importing..." : "Run Import"}
@@ -131,10 +174,13 @@ export default function ImportPage() {
                         <strong>Format:</strong> Data must be Comma Separated (CSV).
                     </li>
                     <li>
-                        <strong>Columns:</strong> <code>Key ID, Asset Name, Area</code>
+                        <strong>Columns:</strong> <code>Key ID, Name, Location, Quantity</code>
                     </li>
                     <li>
-                        <strong>Example:</strong> <code>101, Front Door, Lobby</code>
+                        <strong>Example:</strong> <code>A1, Bedroom 1, 58 Victoria Road, 5</code>
+                    </li>
+                    <li>
+                        This will create 1 Asset ("Bedroom 1") and 5 Keys (all with tag "A1") linked to it.
                     </li>
                 </ul>
             </div>

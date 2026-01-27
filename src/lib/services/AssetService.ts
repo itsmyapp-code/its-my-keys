@@ -160,6 +160,44 @@ export const AssetService = {
      */
     deleteAsset: async (assetId: string) => {
         await deleteDoc(doc(db, ASSETS_COLLECTION, assetId));
+    },
+
+    /**
+     * Delete ALL assets for an organization
+     * (Danger Zone)
+     */
+    deleteAllAssets: async (orgId: string) => {
+        const q = query(
+            collection(db, ASSETS_COLLECTION),
+            where("orgId", "==", orgId)
+        );
+        const snapshot = await getDocs(q);
+
+        // Delete in batches of 500
+        const batchSize = 500;
+        let batch = import("firebase/firestore").then(mod => mod.writeBatch(db)).then(async (batch) => {
+            let count = 0;
+            // Need to await the dynamic import or just use writeBatch from import if available at top
+            // To simplify, let's just loop and delete for now or use properly imported writeBatch
+            // Re-using the logic from top imports
+            const { writeBatch } = await import("firebase/firestore");
+            let currentBatch = writeBatch(db);
+
+            for (const document of snapshot.docs) {
+                currentBatch.delete(document.ref);
+                count++;
+                if (count >= batchSize) {
+                    await currentBatch.commit();
+                    currentBatch = writeBatch(db);
+                    count = 0;
+                }
+            }
+            if (count > 0) {
+                await currentBatch.commit();
+            }
+        });
+
+        await batch;
     }
 };
 
