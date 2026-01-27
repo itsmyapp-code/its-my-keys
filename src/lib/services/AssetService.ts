@@ -153,6 +153,13 @@ export const AssetService = {
             actorName,
             notes
         });
+    },
+
+    /**
+     * Delete an asset
+     */
+    deleteAsset: async (assetId: string) => {
+        await deleteDoc(doc(db, ASSETS_COLLECTION, assetId));
     }
 };
 

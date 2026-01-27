@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useInventory } from "@/contexts/InventoryContext";
 import { KeyItem, Asset, AssetType } from "@/types";
 import { KeyActionModal } from "@/components/dashboard/KeyActionModal";
@@ -54,6 +54,36 @@ export default function Dashboard() {
     [AssetType.RENTAL]: displayAssets.filter(a => a.type === AssetType.RENTAL),
   };
 
+  // derived grouped keys
+  const keyGroups = useMemo(() => {
+    const groups: Record<string, { id: string, parentName: string, location: string, keys: Asset[] }> = {};
+    const keys = grouped[AssetType.KEY];
+
+    // Helper map for full asset lookup (for naming)
+    const assetMap = new Map(assets.map(a => [a.id, a]));
+
+    keys.forEach(k => {
+      const parentId = k.metaData?.assetId;
+      // If we can't find a parent ID, we treat the key as its own group (legacy or orphan)
+      // We use 'orphan-' + k.id to ensure uniqueness
+      const groupKey = parentId || `orphan-${k.id}`;
+
+      if (!groups[groupKey]) {
+        const parent = assetMap.get(parentId);
+        groups[groupKey] = {
+          id: groupKey,
+          parentName: parent?.name || k.name || "Unknown Asset",
+          location: k.metaData?.location || k.area || "General",
+          keys: []
+        };
+      }
+      groups[groupKey].keys.push(k);
+    });
+
+    return Object.values(groups).sort((a, b) => a.parentName.localeCompare(b.parentName));
+  }, [grouped[AssetType.KEY], assets]);
+
+
   const handleKeyClick = (keyItem: KeyItem) => {
     setSelectedKey(keyItem);
     setIsModalOpen(true);
@@ -88,7 +118,7 @@ export default function Dashboard() {
       </div>
 
       {/* Keys Definition */}
-      {visibility.keys && (grouped[AssetType.KEY].length > 0 || query) && (
+      {visibility.keys && (keyGroups.length > 0 || query) && (
         <section>
           <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-white">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100 text-yellow-600">
@@ -97,8 +127,8 @@ export default function Dashboard() {
             Keys
           </h2>
           <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-            {grouped[AssetType.KEY].map(asset => (
-              <KeyCard key={asset.id} asset={asset} onClick={() => handleKeyClick(asset)} />
+            {keyGroups.map(group => (
+              <KeyGroupCard key={group.id} group={group} onAction={handleKeyClick} />
             ))}
           </div>
         </section>
@@ -155,7 +185,7 @@ export default function Dashboard() {
         </section>
       )}
 
-      {Object.values(grouped).every(g => g.length === 0) && (
+      {Object.values(grouped).every(g => g.length === 0) && !keyGroups.length && (
         <div className="col-span-full py-10 text-center text-gray-500 dark:text-gray-400">
           <p>No assets found matched your preferences or search.</p>
         </div>
@@ -174,22 +204,108 @@ export default function Dashboard() {
 
 // --- Specialized Cards ---
 
-function KeyCard({ asset, onClick }: { asset: Asset, onClick: () => void }) {
-  const meta = asset.metaData || {};
+function KeyGroupCard({ group, onAction }: {
+  group: { id: string, parentName: string, location: string, keys: Asset[] },
+  onAction: (k: Asset) => void
+}) {
+  const availableKeys = group.keys.filter(k => k.status === "AVAILABLE");
+  const checkedOutKeys = group.keys.filter(k => k.status === "CHECKED_OUT" || k.status === "MISSING");
+  const total = group.keys.length;
+
+  const handleIssue = () => {
+    // Pick first available
+    if (availableKeys.length > 0) {
+      onAction(availableKeys[0]);
+    }
+  };
+
   return (
-    <BaseCard asset={asset} onClick={onClick}>
-      <div className="mb-2">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{asset.name}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{meta.location || "General"}</p>
-      </div>
-      {meta.keyCode && (
-        <div className="mb-3">
-          <span className="inline-block rounded bg-purple-100 px-2 py-1 text-sm font-bold text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-            {meta.keyCode}
+    <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+      {/* Header */}
+      <div className="flex items-start justify-between p-5 pb-3">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{group.parentName}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{group.location}</p>
+        </div>
+        <div className={`flex flex-col items-end`}>
+          <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400`}>
+            {total} Total
           </span>
         </div>
-      )}
-    </BaseCard>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="flex gap-2 px-5 pb-4">
+        {availableKeys.length > 0 && (
+          <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+            ● {availableKeys.length} Available
+          </span>
+        )}
+        {checkedOutKeys.length > 0 && (
+          <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+            ● {checkedOutKeys.length} Out
+          </span>
+        )}
+        {availableKeys.length === 0 && checkedOutKeys.length === 0 && (
+          <span className="text-xs text-gray-400">No Keys</span>
+        )}
+      </div>
+
+      {/* Body: List of Outs */}
+      <div className="flex-1 flex flex-col border-t border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+        {checkedOutKeys.length > 0 ? (
+          <div className="space-y-3">
+            {checkedOutKeys.map(k => (
+              <div key={k.id} className="flex items-center justify-between gap-2 text-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={`h-6 w-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${k.status === 'MISSING' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                    {k.status === 'MISSING' ? 'M' : (k.metaData?.currentHolder?.[0] || "?").toUpperCase()}
+                  </div>
+                  <div className="truncate">
+                    <div className="font-medium text-gray-900 dark:text-white truncate">
+                      {k.status === 'MISSING' ? 'MISSING' : k.metaData?.currentHolder || "Unknown"}
+                    </div>
+                    {k.metaData?.keyCode && (
+                      <div className="text-xs text-gray-400">Tag: {k.metaData.keyCode}</div>
+                    )}
+                    {k.metaData?.checkedOutAt && (
+                      <div className="text-xs text-blue-500">
+                        Out: {k.metaData.checkedOutAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => onAction(k)}
+                  className="shrink-0 rounded bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm border border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
+                >
+                  Return
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center py-4 text-xs text-gray-400 italic">
+            All keys are in stock.
+          </div>
+        )}
+      </div>
+
+      {/* Footer Action */}
+      <div className="border-t border-gray-100 p-4 dark:border-gray-700">
+        <button
+          onClick={handleIssue}
+          disabled={availableKeys.length === 0}
+          className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-colors ${availableKeys.length > 0
+            ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+            : "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+            }`}
+        >
+          {availableKeys.length > 0 ? "Issue Available Key" : "No Keys Available"}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -263,10 +379,10 @@ function BaseCard({ asset, onClick, children }: { asset: Asset, onClick: () => v
           {children}
         </div>
         <div className={`ml-2 flex-shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${isAvailable
-            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-            : asset.status === "MISSING"
-              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+          : asset.status === "MISSING"
+            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+            : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
           }`}>
           {(asset.status || "UNKNOWN").replace(/_/g, " ")}
         </div>

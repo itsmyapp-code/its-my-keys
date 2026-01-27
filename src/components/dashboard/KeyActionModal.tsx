@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { KeyItem, LoanType } from "@/types";
 import { updateKeyStatus, reportKeyMissing } from "@/lib/firestore/services";
+import { AssetService } from "@/lib/services/AssetService"; // Import Service
 import { Timestamp } from "firebase/firestore";
 
 interface KeyActionModalProps {
@@ -27,6 +28,21 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
     const isAvailable = keyItem.status === "AVAILABLE";
     const isMissing = keyItem.status === "MISSING";
     const meta = keyItem.metaData || {};
+
+    const handleDelete = async () => {
+        if (!confirm("Are you sure you want to remove this key? This action cannot be undone.")) return;
+
+        setLoading(true);
+        try {
+            await AssetService.deleteAsset(keyItem.id);
+            onClose();
+        } catch (err: any) {
+            console.error("Error deleting key:", err);
+            alert("Failed to delete key: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleCheckOut = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -204,6 +220,16 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
                         >
                             {loading ? "Processing..." : "Confirm Check Out"}
                         </button>
+
+                        <div className="pt-2 border-t border-gray-100 dark:border-gray-700 mt-4">
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                className="text-xs text-red-500 hover:text-red-700 underline"
+                            >
+                                Remove this key permanently
+                            </button>
+                        </div>
                     </form>
                 ) : isReportingMissing ? (
                     /* MISSING REPORT FORM */
@@ -248,7 +274,7 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
                             <button
                                 onClick={handleReturn}
                                 disabled={loading}
-                                className="rounded-lg bg-green-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 disabled:opacity-50 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+                                className="col-span-2 rounded-lg bg-green-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 disabled:opacity-50 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
                             >
                                 Return Key
                             </button>
@@ -258,6 +284,13 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
                                 className="rounded-lg border border-red-200 bg-white px-5 py-2.5 text-center text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:opacity-50 dark:border-red-900 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-900/20"
                             >
                                 Report Missing
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={loading}
+                                className="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100 disabled:opacity-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-400 dark:hover:bg-gray-800"
+                            >
+                                Remove Key
                             </button>
                         </div>
                     </div>
