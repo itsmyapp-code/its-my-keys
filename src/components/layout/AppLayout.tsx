@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     if (loading) {
         return (
@@ -23,7 +24,25 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Sidebar />
+            {/* Mobile Header */}
+            <div className="flex items-center justify-between border-b bg-white p-4 shadow-sm sm:hidden dark:bg-gray-800 dark:border-gray-700">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <span className="font-semibold text-lg text-gray-800 dark:text-white">Its My Keys</span>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.jpg" alt="Logo" className="h-8 w-auto rounded-md" />
+            </div>
+
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
             <div className="p-4 sm:ml-64">
                 {children}
             </div>
