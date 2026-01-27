@@ -101,7 +101,9 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
             <div className="space-y-4 pt-4 border-t border-border">
                 <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
                     {type === AssetType.KEY ? "Key Details" :
-                        type === AssetType.IT_DEVICE ? "Device Specs" : "Details"}
+                        type === AssetType.IT_DEVICE ? "Device Specs" :
+                            type === AssetType.VEHICLE ? "Vehicle Details" :
+                                type === AssetType.RENTAL ? "Property Details" : "Details"}
                 </h3>
 
                 {type === AssetType.KEY && (
@@ -145,6 +147,79 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
                                 className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
                                 placeholder="e.g. MacBook Pro M3"
                                 onChange={(e) => handleMetadataChange("model", e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">Asset Tag</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                placeholder="e.g. IT-009"
+                                onChange={(e) => handleMetadataChange("assetTag", e.target.value)}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {type === AssetType.VEHICLE && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">Registration Plate</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none uppercase"
+                                placeholder="e.g. AB12 CDE"
+                                onChange={(e) => handleMetadataChange("registrationPlate", e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">Make</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                placeholder="e.g. Ford"
+                                onChange={(e) => handleMetadataChange("make", e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">Model</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                placeholder="e.g. Transit Custom"
+                                onChange={(e) => handleMetadataChange("model", e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">VIN / Chassis</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                placeholder="Optional"
+                                onChange={(e) => handleMetadataChange("vin", e.target.value)}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {type === AssetType.RENTAL && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">Unit Number / Address</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                placeholder="e.g. Flat 4B or 12 High St"
+                                onChange={(e) => handleMetadataChange("unitNumber", e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">Current Tenant</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                placeholder="e.g. Sarah Jones"
+                                onChange={(e) => handleMetadataChange("tenantName", e.target.value)}
                             />
                         </div>
                     </div>
