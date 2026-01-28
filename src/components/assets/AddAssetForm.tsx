@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AssetService } from "@/lib/services/AssetService";
 import { AssetType, AssetStatus } from "@/types";
@@ -52,6 +52,15 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
         }
     };
 
+    const nameInputRef = useRef<HTMLInputElement>(null);
+
+    const handleQrKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Prevent form submit
+            nameInputRef.current?.focus();
+        }
+    };
+
     const handleMetadataChange = (key: string, value: any) => {
         setMetadata(prev => ({ ...prev, [key]: value }));
     };
@@ -70,6 +79,20 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
             )}
 
             {/* Common Fields */}
+            {/* QR Code Scanned First */}
+            <div className="space-y-2 pb-4 border-b border-border mb-4">
+                <label className="text-sm font-medium text-blue-600 dark:text-blue-400">Scan QR Code / Barcode (Start Here)</label>
+                <input
+                    type="text"
+                    value={qrCode}
+                    onChange={(e) => setQrCode(e.target.value)}
+                    onKeyDown={handleQrKeyDown}
+                    autoFocus
+                    className="w-full p-2 rounded-md bg-blue-50/50 border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm dark:bg-blue-900/20 dark:border-blue-800"
+                    placeholder="Scan tag to quick-add..."
+                />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Asset Name</label>
@@ -80,6 +103,7 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
                         onChange={(e) => setName(e.target.value)}
                         className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none transition"
                         placeholder="e.g. Front Door Key"
+                        ref={nameInputRef}
                     />
                 </div>
 
@@ -226,17 +250,7 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
                 )}
             </div>
 
-            {/* Optional QR Code */}
-            <div className="space-y-2 pt-2">
-                <label className="text-sm font-medium text-gray-400">QR Code / Barcode (Optional)</label>
-                <input
-                    type="text"
-                    value={qrCode}
-                    onChange={(e) => setQrCode(e.target.value)}
-                    className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none font-mono text-xs"
-                    placeholder="Scan or type ID..."
-                />
-            </div>
+
 
             <div className="pt-4">
                 <button

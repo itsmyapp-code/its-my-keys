@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const NAV_ITEMS = [
     { label: "Dashboard", href: "/" },
+    { label: "Assets", href: "/admin/assets" },
     { label: "Add Key", href: "/admin/add-key" },
     { label: "Audit Mode", href: "/admin/audit" },
     { label: "Active Loans", href: "/admin/reports" }, // New Link

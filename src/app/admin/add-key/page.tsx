@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useInventory } from "@/contexts/InventoryContext";
 import { AssetService } from "@/lib/services/AssetService";
@@ -17,6 +17,7 @@ export default function AddKeyPage() {
         keyId: "",
         assetName: "",
         area: "",
+        qrCode: "",
     });
 
     const [loading, setLoading] = useState(false);
@@ -30,6 +31,15 @@ export default function AddKeyPage() {
             setFormData(prev => ({ ...prev, area: existingAsset.area || "" }));
         }
     }, [formData.assetName, assets, formData.area]);
+
+    const keyIdInputRef = useRef<HTMLInputElement>(null);
+
+    const handleQrKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            keyIdInputRef.current?.focus();
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -79,11 +89,12 @@ export default function AddKeyPage() {
                     assetId: assetId,
                     location: formData.area || (existingAsset?.area || "General"),
                     loanType: "STANDARD",
-                }
+                },
+                qrCode: formData.qrCode || undefined
             });
 
             setSuccess(`Successfully added Key ${formData.keyId}`);
-            setFormData({ keyId: "", assetName: "", area: "" }); // Reset
+            setFormData({ keyId: "", assetName: "", area: "", qrCode: "" }); // Reset
         } catch (err: any) {
             console.error(err);
             setError(err.message || "Failed to create key.");
@@ -99,6 +110,21 @@ export default function AddKeyPage() {
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                 <form onSubmit={handleSubmit} className="space-y-6">
 
+
+                    {/* QR Code Scanned First */}
+                    <div className="space-y-2 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        <label className="text-sm font-medium text-blue-600 dark:text-blue-400">Scan QR Code / Barcode (Start Here)</label>
+                        <input
+                            type="text"
+                            value={formData.qrCode}
+                            onChange={e => setFormData({ ...formData, qrCode: e.target.value })}
+                            onKeyDown={handleQrKeyDown}
+                            autoFocus
+                            className="block w-full rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 font-mono text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-blue-800 dark:bg-blue-900/20 dark:text-white"
+                            placeholder="Scan tag to quick-add..."
+                        />
+                    </div>
+
                     {/* Key ID */}
                     <div>
                         <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
@@ -111,6 +137,7 @@ export default function AddKeyPage() {
                             onChange={e => setFormData({ ...formData, keyId: e.target.value })}
                             placeholder="e.g. 104-A"
                             className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            ref={keyIdInputRef}
                         />
                     </div>
 
