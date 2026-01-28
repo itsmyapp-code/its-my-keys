@@ -30,7 +30,16 @@ export function AssetList() {
             {/* Search */}
             <div className="sticky top-0 bg-background/95 backdrop-blur-md z-10 py-4 border-b border-border/50 flex gap-4">
                 <div className="relative w-full max-w-xl">
-                    <input ... />
+                    <input
+                        type="text"
+                        placeholder="Search keys, serials, plates..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-12 py-3 rounded-lg bg-secondary border border-transparent focus:border-ring focus:ring-2 focus:ring-ring/20 outline-none transition shadow-sm"
+                    />
+                    <svg className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                     <button
                         onClick={() => setIsScannerOpen(true)}
                         className="absolute right-3 top-3 text-gray-400 hover:text-blue-600 p-1"
@@ -48,7 +57,6 @@ export function AssetList() {
                 </button>
             </div>
 
-            {/* ... list content ... */}
 
             <QRScannerModal
                 isOpen={isScannerOpen}
@@ -56,100 +64,85 @@ export function AssetList() {
                 onScan={handleScan}
             />
 
+            {/* Keys Section */}
+            {grouped[AssetType.KEY].length > 0 && (
+                <section>
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100 text-yellow-600 text-lg">🔑</span>
+                        Keys
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {grouped[AssetType.KEY].map((asset) => (
+                            <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* IT Section */}
+            {grouped[AssetType.IT_DEVICE].length > 0 && (
+                <section>
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 text-lg">💻</span>
+                        IT Devices
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {grouped[AssetType.IT_DEVICE].map((asset) => (
+                            <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* Vehicles Section */}
+            {grouped[AssetType.VEHICLE].length > 0 && (
+                <section>
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600 text-lg">🚗</span>
+                        Vehicles
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {grouped[AssetType.VEHICLE].map((asset) => (
+                            <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* Rentals Section */}
+            {grouped[AssetType.RENTAL].length > 0 && (
+                <section>
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600 text-lg">🏠</span>
+                        Rentals
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {grouped[AssetType.RENTAL].map((asset) => (
+                            <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* No Assets Found */}
+            {displayAssets.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-gray-400">
+                    <div className="text-4xl mb-4">🔍</div>
+                    <p className="text-lg font-medium text-foreground">No assets found</p>
+                    <p className="text-sm">Try adjusting your search or create a new asset.</p>
+                </div>
+            )}
+
             {/* Action Modal */}
-            ...
+            {selectedAsset && (
+                <AssetActionModal
+                    asset={selectedAsset}
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSuccess={handleModalSuccess}
+                />
+            )}
         </div>
-    );
-}
-{
-    (grouped[AssetType.KEY].length > 0) && (
-        <section>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100 text-yellow-600 text-lg">🔑</span>
-                Keys
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {grouped[AssetType.KEY].map((asset) => (
-                    <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
-                ))}
-            </div>
-        </section>
-    )
-}
-
-{/* IT Section */ }
-{
-    (grouped[AssetType.IT_DEVICE].length > 0) && (
-        <section>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 text-lg">💻</span>
-                IT Devices
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {grouped[AssetType.IT_DEVICE].map((asset) => (
-                    <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
-                ))}
-            </div>
-        </section>
-    )
-}
-
-{/* Vehicles Section */ }
-{
-    (grouped[AssetType.VEHICLE].length > 0) && (
-        <section>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600 text-lg">🚗</span>
-                Vehicles
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {grouped[AssetType.VEHICLE].map((asset) => (
-                    <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
-                ))}
-            </div>
-        </section>
-    )
-}
-
-{/* Rentals Section */ }
-{
-    (grouped[AssetType.RENTAL].length > 0) && (
-        <section>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600 text-lg">🏠</span>
-                Rentals
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {grouped[AssetType.RENTAL].map((asset) => (
-                    <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
-                ))}
-            </div>
-        </section>
-    )
-}
-
-{
-    displayAssets.length === 0 && (
-        <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-gray-400">
-            <div className="text-4xl mb-4">🔍</div>
-            <p className="text-lg font-medium text-foreground">No assets found</p>
-            <p className="text-sm">Try adjusting your search or create a new asset.</p>
-        </div>
-    )
-}
-
-{/* Action Modal */ }
-{
-    selectedAsset && (
-        <AssetActionModal
-            asset={selectedAsset}
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onSuccess={handleModalSuccess}
-        />
-    )
-}
-        </div >
     );
 }
 
