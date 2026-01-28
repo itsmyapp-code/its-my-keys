@@ -5,6 +5,7 @@ import { KeyItem, LoanType } from "@/types";
 import { updateKeyStatus, reportKeyMissing } from "@/lib/firestore/services";
 import { AssetService } from "@/lib/services/AssetService"; // Import Service
 import { Timestamp } from "firebase/firestore";
+import { QRScannerModal } from "@/components/common/QRScannerModal";
 
 interface KeyActionModalProps {
     keyItem: KeyItem | null;
@@ -22,6 +23,49 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
     const [duration, setDuration] = useState<string>("1_HOUR"); // 1_HOUR, 4_HOURS, EOD, INDEFINITE
     const [isReportingMissing, setIsReportingMissing] = useState(false);
     const [missingReason, setMissingReason] = useState("");
+
+    // Edit Mode State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [editQrCode, setEditQrCode] = useState("");
+    const [isEditScannerOpen, setIsEditScannerOpen] = useState(false);
+
+    // Initialize edit state when entering edit mode
+    const startEditing = () => {
+        setEditName(keyItem?.name || "");
+        setEditQrCode(keyItem?.qrCode || keyItem?.metaData?.keyCode || "");
+        setIsEditing(true);
+    };
+
+    const cancelEditing = () => {
+        setIsEditing(false);
+        setEditName("");
+        setEditQrCode("");
+    };
+
+    const handleSaveEdit = async () => {
+        if (!keyItem) return;
+        setLoading(true);
+        try {
+            await AssetService.updateAsset(keyItem.id, {
+                name: editName,
+                qrCode: editQrCode,
+                // Also update metadata keyCode if it exists or is being added
+                metaData: {
+                    ...keyItem.metaData,
+                    keyCode: editQrCode || keyItem.metaData?.keyCode
+                }
+            });
+            // Ideally we'd update local state, but closing/refreshing works too (context updates)
+            setIsEditing(false);
+            onClose(); // Close modal to force refresh/clear state
+        } catch (err: any) {
+            console.error("Error updating key:", err);
+            alert("Failed to update key: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (!isOpen || !keyItem) return null;
 
@@ -133,11 +177,20 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
                     <h2 className={`text-xl font-bold ${isMissing ? "text-red-600" : "dark:text-white"}`}>
                         {isMissing ? `${assetLabel} Missing` : (isAvailable ? `Check Out ${assetLabel}` : `Return ${assetLabel} ${isAvailable ? '' : (meta.registrationPlate || meta.keyCode || keyItem.name)}`)}
                     </h2>
-                    <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <svg className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <div className="flex gap-2">
+                        {!isEditing && !isMissing && (
+                            <button onClick={startEditing} className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500" title="Edit Key Details">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                </svg>
+                            </button>
+                        )}
+                        <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <svg className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Key Info Badge */}
@@ -160,7 +213,64 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
 
                 {/* CONTENT */}
 
-                {isMissing ? (
+                {isEditing ? (
+                    /* EDIT FORM */
+                    <div className="space-y-4">
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Key Name / ID</label>
+                            <input
+                                type="text"
+                                className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">QR Code / Tag</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                    value={editQrCode}
+                                    onChange={(e) => setEditQrCode(e.target.value)}
+                                    placeholder="Scan to fill..."
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditScannerOpen(true)}
+                                    className="rounded-lg bg-gray-200 px-3 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                >
+                                    📷
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-2">
+                            <button
+                                onClick={cancelEditing}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={loading || !editName.trim()}
+                                className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700"
+                            >
+                                {loading ? "Saving..." : "Save Changes"}
+                            </button>
+                        </div>
+
+                        <QRScannerModal
+                            isOpen={isEditScannerOpen}
+                            onClose={() => setIsEditScannerOpen(false)}
+                            onScan={(code) => {
+                                setEditQrCode(code);
+                                setIsEditScannerOpen(false);
+                            }}
+                        />
+                    </div>
+                ) : isMissing ? (
                     /* MISSING VIEW */
                     <div className="space-y-4">
                         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/30 dark:text-red-300 space-y-2">
