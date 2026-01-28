@@ -165,7 +165,7 @@ export default function Dashboard() {
           </div>
           <input
             type="search"
-            className="block w-full rounded-lg border border-gray-300 bg-white p-4 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="block w-full rounded-lg border border-gray-300 bg-white p-4 pl-10 pr-12 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             placeholder="Search assets, holders, or scan QR code..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}

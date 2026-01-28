@@ -46,9 +46,12 @@ export function OverdueAlertModal({ isOpen, onClose, overdueKeys }: OverdueAlert
 
                         // Parse Checked Out At
                         let outString = "";
-                        if (meta.checkedOutAt) {
-                            if (typeof meta.checkedOutAt.toDate === 'function') outString = meta.checkedOutAt.toDate().toLocaleString("en-GB");
-                            else if (meta.checkedOutAt.seconds) outString = new Date(meta.checkedOutAt.seconds * 1000).toLocaleString("en-GB");
+                        // Check root first, then metadata
+                        const checkedOutAt = (key as any).checkedOutAt || meta.checkedOutAt;
+
+                        if (checkedOutAt) {
+                            if (typeof checkedOutAt.toDate === 'function') outString = checkedOutAt.toDate().toLocaleString("en-GB");
+                            else if (checkedOutAt.seconds) outString = new Date(checkedOutAt.seconds * 1000).toLocaleString("en-GB");
                         }
 
 

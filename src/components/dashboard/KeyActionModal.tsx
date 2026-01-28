@@ -387,7 +387,9 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
                             <p>Current Holder: <span className="font-bold">{meta.currentHolder}</span></p>
                             <p>Time Out: <span className="font-medium">
                                 {(() => {
-                                    const val = meta.checkedOutAt;
+                                    // Check root first (where service writes it), then metadata (legacy/fallback)
+                                    const val = (keyItem as any).checkedOutAt || meta.checkedOutAt;
+
                                     if (!val) return "Unknown";
                                     // Handle Firestore Timestamp (has toDate)
                                     if (typeof val.toDate === 'function') return val.toDate().toLocaleString("en-GB");
