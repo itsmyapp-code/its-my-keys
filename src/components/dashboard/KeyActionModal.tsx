@@ -23,9 +23,10 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
         const fetchParent = async () => {
             if (keyItem?.metaData?.assetId) {
                 try {
-                    const snap = await AssetService.getAsset(keyItem.metaData.assetId); // Assumes getAsset exists or use getDoc
-                    // actually AssetService might not have getAsset, check imports
-                    // Using direct firestore likely easier or check service.
+                    const snap = await AssetService.getAsset(keyItem.metaData.assetId);
+                    if (snap) {
+                        setParentAsset(snap);
+                    }
                 } catch (e) { console.error(e); }
             }
         };
