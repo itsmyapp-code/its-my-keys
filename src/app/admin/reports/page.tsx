@@ -110,6 +110,11 @@ export default function ReportsPage() {
         return "-";
     };
 
+    const handleKeyClick = (key: KeyItem) => {
+        setSelectedKey(key);
+        setIsModalOpen(true);
+    };
+
     return (
         <div className="mx-auto max-w-6xl space-y-8 p-4">
             {/* Header */}
