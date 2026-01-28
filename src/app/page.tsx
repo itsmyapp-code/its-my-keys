@@ -46,7 +46,10 @@ export default function Dashboard() {
   }, [profile?.orgId]);
 
   const results = search(query);
-  const displayAssets = query ? results.assets : assets;
+  // Merge assets and keys for display to ensure QR matches (which are keys) are shown
+  const displayAssets = query
+    ? Array.from(new Set([...results.assets, ...results.keys]))
+    : assets;
 
   // Grouping
   const grouped = {
@@ -252,6 +255,14 @@ function KeyGroupCard({ group, onAction }: {
   const checkedOutKeys = group.keys.filter(k => k.status === "CHECKED_OUT" || k.status === "MISSING");
   const total = group.keys.length;
 
+  // Key sorting: Numerically if possible, else alphabetical
+  const sortKeys = (a: Asset, b: Asset) => {
+    return a.name.localeCompare(b.name, undefined, { numeric: true });
+  };
+
+  availableKeys.sort(sortKeys);
+  checkedOutKeys.sort(sortKeys);
+
   const handleIssue = () => {
     // Pick first available
     if (availableKeys.length > 0) {
@@ -291,53 +302,79 @@ function KeyGroupCard({ group, onAction }: {
         )}
       </div>
 
-      {/* Body: List of Outs */}
+      {/* Body: Key List (Available & Out) */}
       <div className="flex-1 flex flex-col border-t border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-        {checkedOutKeys.length > 0 ? (
-          <div className="space-y-3">
-            {checkedOutKeys.map(k => (
-              <div key={k.id} className="flex items-start justify-between gap-2 text-sm">
-                <div className="flex items-start gap-2 min-w-0">
-                  <div className={`mt-1 h-6 w-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${k.status === 'MISSING' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'
-                    }`}>
-                    {k.status === 'MISSING' ? 'M' : (k.metaData?.currentHolder?.[0] || "?").toUpperCase()}
-                  </div>
-                  <div className="truncate">
-                    <div className="font-medium text-gray-900 dark:text-white truncate">
-                      {k.status === 'MISSING' ? 'MISSING' : k.metaData?.currentHolder || "Unknown"}
-                    </div>
-                    {k.metaData?.keyCode && (
-                      <div className="text-xs text-gray-400">Tag: {k.metaData.keyCode}</div>
-                    )}
 
-                    <div className="mt-1 flex flex-col gap-0.5">
-                      {k.metaData?.checkedOutAt && (
-                        <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                          <span className="w-6 opacity-75">Out:</span>
-                          <span>{k.metaData.checkedOutAt.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
+        {/* Available Keys List */}
+        {availableKeys.length > 0 && (
+          <div className="mb-4">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Available Keys</h4>
+            <div className="flex flex-wrap gap-2">
+              {availableKeys.map(k => (
+                <button
+                  key={k.id}
+                  onClick={() => onAction(k)}
+                  className="rounded border border-green-200 bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40"
+                  title={`Issue Key ${k.name}`}
+                >
+                  {k.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Checked Out List */}
+        {checkedOutKeys.length > 0 && (
+          <div>
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Checked Out / Missing</h4>
+            <div className="space-y-3">
+              {checkedOutKeys.map(k => (
+                <div key={k.id} className="flex items-start justify-between gap-2 text-sm">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <div className={`mt-1 h-6 w-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${k.status === 'MISSING' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'
+                      }`}>
+                      {k.status === 'MISSING' ? 'M' : (k.metaData?.currentHolder?.[0] || "?").toUpperCase()}
+                    </div>
+                    <div className="truncate">
+                      <div className="font-medium text-gray-900 dark:text-white truncate">
+                        {k.status === 'MISSING' ? 'MISSING' : k.metaData?.currentHolder || "Unknown"}
+                      </div>
+                      {k.metaData?.keyCode && (
+                        <div className="text-xs text-gray-400">Tag: {k.metaData.keyCode}</div>
                       )}
-                      {k.metaData?.dueDate && (
-                        <div className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                          <span className="w-6 opacity-75">Due:</span>
-                          <span>{k.metaData.dueDate.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      )}
+
+                      <div className="mt-1 flex flex-col gap-0.5">
+                        {k.metaData?.checkedOutAt && (
+                          <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                            <span className="w-6 opacity-75">Out:</span>
+                            <span>{k.metaData.checkedOutAt.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        )}
+                        {k.metaData?.dueDate && (
+                          <div className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                            <span className="w-6 opacity-75">Due:</span>
+                            <span>{k.metaData.dueDate.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <button
+                    onClick={() => onAction(k)}
+                    className="shrink-0 rounded bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm border border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
+                  >
+                    Return
+                  </button>
                 </div>
-                <button
-                  onClick={() => onAction(k)}
-                  className="shrink-0 rounded bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm border border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  Return
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        ) : (
+        )}
+
+        {availableKeys.length === 0 && checkedOutKeys.length === 0 && (
           <div className="flex-1 flex items-center justify-center py-4 text-xs text-gray-400 italic">
-            All keys are in stock.
+            No keys found in this group.
           </div>
         )}
       </div>

@@ -82,6 +82,20 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     const search = (query: string): SearchResult => {
         if (!query) return { assets, keys };
 
+        // 1. Strict QR Code Match (Exact, Case-Insensitive)
+        // If query looks like a QR code (longer than 1 char typically), prioritize exact match
+        if (query.length > 0) {
+            const exactMatch = keys.find(k =>
+                (k.qrCode && k.qrCode.toLowerCase() === query.toLowerCase()) ||
+                (k.metaData?.keyCode && k.metaData.keyCode.toLowerCase() === query.toLowerCase())
+            );
+
+            if (exactMatch) {
+                // If we found an exact match, return ONLY this key to prevent "multiple keys" confusion
+                return { assets: [], keys: [exactMatch] };
+            }
+        }
+
         const assetResults = fuseAssets.search(query).map(r => r.item);
         const keyResults = fuseKeys.search(query).map(r => r.item);
 
