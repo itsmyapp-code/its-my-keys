@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useInventory } from "@/contexts/InventoryContext";
+import { useAuth } from "@/contexts/AuthContext";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -10,14 +11,12 @@ import { KeyItem } from "@/types";
 
 export default function ReportsPage() {
     const { keys, loading } = useInventory();
+    const { profile } = useAuth();
     const [generating, setGenerating] = useState(false);
 
     // Modal State
     const [selectedKey, setSelectedKey] = useState<KeyItem | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { profile } = useInventory(); // Assuming context provides profile/orgId, wait useInventory doesn't provide profile usually.
-    // Actually useInventory provides assets/keys/loading/search. useAuth provides profile.
-    // I need to import useAuth.
 
     // Filter active keys
     const activeKeys = keys
