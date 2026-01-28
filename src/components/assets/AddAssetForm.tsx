@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AssetService } from "@/lib/services/AssetService";
 import { AssetType, AssetStatus } from "@/types";
+import { QRScannerModal } from "@/components/common/QRScannerModal";
 
 export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
     const { profile } = useAuth();
@@ -17,6 +18,7 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
 
     // Polymorphic Metadata
     const [metadata, setMetadata] = useState<Record<string, any>>({});
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -65,6 +67,14 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
         setMetadata(prev => ({ ...prev, [key]: value }));
     };
 
+    const handleScan = (code: string) => {
+        setQrCode(code);
+        // Slight delay to allow modal to close completely before focus
+        setTimeout(() => {
+            nameInputRef.current?.focus();
+        }, 100);
+    };
+
     return (
         <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-card border border-border rounded-lg shadow-sm">
             <div>
@@ -82,15 +92,25 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
             {/* QR Code Scanned First */}
             <div className="space-y-2 pb-4 border-b border-border mb-4">
                 <label className="text-sm font-medium text-blue-600 dark:text-blue-400">Scan QR Code / Barcode (Start Here)</label>
-                <input
-                    type="text"
-                    value={qrCode}
-                    onChange={(e) => setQrCode(e.target.value)}
-                    onKeyDown={handleQrKeyDown}
-                    autoFocus
-                    className="w-full p-2 rounded-md bg-blue-50/50 border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm dark:bg-blue-900/20 dark:border-blue-800"
-                    placeholder="Scan tag to quick-add..."
-                />
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={qrCode}
+                        onChange={(e) => setQrCode(e.target.value)}
+                        onKeyDown={handleQrKeyDown}
+                        autoFocus
+                        className="w-full p-2 rounded-md bg-blue-50/50 border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm dark:bg-blue-900/20 dark:border-blue-800"
+                        placeholder="Scan tag to quick-add..."
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setIsScannerOpen(true)}
+                        className="shrink-0 rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-600 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60"
+                        title="Open Camera"
+                    >
+                        📸
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -261,6 +281,12 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
                     {loading ? "Creating..." : "Create Asset"}
                 </button>
             </div>
+
+            <QRScannerModal
+                isOpen={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleScan}
+            />
         </form>
     );
 }
