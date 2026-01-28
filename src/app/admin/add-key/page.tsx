@@ -40,12 +40,14 @@ export default function AddKeyPage() {
     const handleQrKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
+            // Auto-fill Key ID with the scanned code
+            setFormData(prev => ({ ...prev, keyId: e.currentTarget.value }));
             keyIdInputRef.current?.focus();
         }
     };
 
     const handleScan = (code: string) => {
-        setFormData(prev => ({ ...prev, qrCode: code }));
+        setFormData(prev => ({ ...prev, qrCode: code, keyId: code }));
         setTimeout(() => {
             keyIdInputRef.current?.focus();
         }, 100);
