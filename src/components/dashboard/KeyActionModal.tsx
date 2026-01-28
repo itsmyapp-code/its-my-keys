@@ -275,7 +275,19 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
                     <div className="space-y-4">
                         <div className="rounded-lg bg-yellow-50 p-4 text-sm text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 space-y-1">
                             <p>Current Holder: <span className="font-bold">{meta.currentHolder}</span></p>
-                            <p>Time Out: <span className="font-medium">{meta.checkedOutAt ? meta.checkedOutAt.toDate().toLocaleString("en-GB") : (meta.checkedOutAt?.seconds ? new Date(meta.checkedOutAt.seconds * 1000).toLocaleString("en-GB") : "Unknown")}</span></p>
+                            <p>Time Out: <span className="font-medium">
+                                {(() => {
+                                    const val = meta.checkedOutAt;
+                                    if (!val) return "Unknown";
+                                    // Handle Firestore Timestamp (has toDate)
+                                    if (typeof val.toDate === 'function') return val.toDate().toLocaleString("en-GB");
+                                    // Handle Serializable Timestamp ({ seconds, nanoseconds })
+                                    if (val.seconds) return new Date(val.seconds * 1000).toLocaleString("en-GB");
+                                    // Handle Date object
+                                    if (val instanceof Date) return val.toLocaleString("en-GB");
+                                    return "Unknown";
+                                })()}
+                            </span></p>
                             <p>Due: <span className="font-medium">{meta.dueDate ? meta.dueDate.toDate().toLocaleString("en-GB") : "Indefinite"}</span></p>
                         </div>
 

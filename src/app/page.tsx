@@ -5,6 +5,7 @@ import { useInventory } from "@/contexts/InventoryContext";
 import { KeyItem, Asset, AssetType } from "@/types";
 import { KeyActionModal } from "@/components/dashboard/KeyActionModal";
 import { QRScannerModal } from "@/components/common/QRScannerModal";
+import { OverdueAlertModal } from "@/components/dashboard/OverdueAlertModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
@@ -19,6 +20,11 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
+  // Overdue Alert State
+  const [isOverdueOpen, setIsOverdueOpen] = useState(false);
+  const [overdueKeys, setOverdueKeys] = useState<Asset[]>([]);
+  const [hasCheckedOverdue, setHasCheckedOverdue] = useState(false);
+
   // Visibility Settings
   const [visibility, setVisibility] = useState({
     keys: true,
@@ -26,6 +32,33 @@ export default function Dashboard() {
     vehicles: true,
     rentals: true
   });
+
+  useEffect(() => {
+    // Check for overdue keys only once after data loads
+    if (!loading && assets.length > 0 && !hasCheckedOverdue) {
+      const now = new Date();
+      const overdue = assets.filter(k => {
+        if (k.type !== AssetType.KEY) return false; // Only keys for now
+        if (k.status !== "CHECKED_OUT") return false;
+
+        const meta = k.metaData || {};
+        if (!meta.dueDate) return false; // Indefinite or no due date
+
+        // Handle Timestamp vs Seconds helper
+        let due: Date | null = null;
+        if (typeof meta.dueDate.toDate === 'function') due = meta.dueDate.toDate();
+        else if (meta.dueDate.seconds) due = new Date(meta.dueDate.seconds * 1000);
+
+        return due && due < now;
+      });
+
+      if (overdue.length > 0) {
+        setOverdueKeys(overdue);
+        setIsOverdueOpen(true);
+      }
+      setHasCheckedOverdue(true);
+    }
+  }, [assets, loading, hasCheckedOverdue]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -240,6 +273,13 @@ export default function Dashboard() {
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onScan={handleScan}
+      />
+
+      {/* Overdue Alert */}
+      <OverdueAlertModal
+        isOpen={isOverdueOpen}
+        onClose={() => setIsOverdueOpen(false)}
+        overdueKeys={overdueKeys}
       />
     </div>
   );
