@@ -45,6 +45,7 @@ export interface Asset {
     metaData: Record<string, any>; // Polymorphic fields
     qrCode?: string;
     searchKeywords: string[]; // For filtering
+    checkedOutAt?: Timestamp; // For top-level access in reports
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }

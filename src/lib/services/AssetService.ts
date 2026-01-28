@@ -72,6 +72,16 @@ export const AssetService = {
     },
 
     /**
+     * Get single asset
+     */
+    getAsset: async (id: string) => {
+        const docRef = doc(db, ASSETS_COLLECTION, id);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) return { id: snap.id, ...snap.data() } as Asset;
+        return null;
+    },
+
+    /**
      * Check OUT an asset
      */
     checkOut: async (assetId: string, actorId: string, actorName: string, recipientName: string, notes?: string) => {
@@ -91,6 +101,8 @@ export const AssetService = {
         await updateDoc(assetRef, {
             status: AssetStatus.CHECKED_OUT,
             updatedAt: serverTimestamp(),
+            checkedOutAt: serverTimestamp(), // Root for generic access
+            "metaData.checkedOutAt": serverTimestamp(), // Metadata for display consistency
             "metaData.currentHolder": recipientName // Explicitly track who has it
         });
 

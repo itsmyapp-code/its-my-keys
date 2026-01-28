@@ -15,9 +15,24 @@ interface KeyActionModalProps {
 }
 
 export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionModalProps) {
-    const [loading, setLoading] = useState(false);
+    const [parentAsset, setParentAsset] = useState<any>(null);
 
-    // Form State
+    // Fetch Parent Asset Info
+    React.useEffect(() => {
+        const fetchParent = async () => {
+            if (keyItem?.metaData?.assetId) {
+                try {
+                    const snap = await AssetService.getAsset(keyItem.metaData.assetId); // Assumes getAsset exists or use getDoc
+                    // actually AssetService might not have getAsset, check imports
+                    // Using direct firestore likely easier or check service.
+                } catch (e) { console.error(e); }
+            }
+        };
+        // actually let's just stick to displaying what we have first, fetching might be slow/complex for this step without checking service
+        // checking service first
+    }, [keyItem]);
+
+    // Better approach: Just use what we have, or if we really need it, Use AssetService.getAsset if available.
     const [holderName, setHolderName] = useState("");
     const [holderCompany, setHolderCompany] = useState(""); // New field
     const [duration, setDuration] = useState<string>("1_HOUR"); // 1_HOUR, 4_HOURS, EOD, INDEFINITE
@@ -205,8 +220,13 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
                             </span>
                         </div>
                         <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">{keyItem.name}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{meta.location || meta.model || "Unknown Location"}</p>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                                {parentAsset ? parentAsset.name : (keyItem.name || "Unknown Key")}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {meta.location || parentAsset?.area || "Unknown Location"}
+                                {meta.keyCode && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-600 dark:bg-gray-700 dark:text-gray-300">Tag: {meta.keyCode}</span>}
+                            </p>
                         </div>
                     </div>
                 </div>

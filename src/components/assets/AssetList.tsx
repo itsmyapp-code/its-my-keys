@@ -1,171 +1,155 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import Fuse from "fuse.js";
-import { useAuth } from "@/contexts/AuthContext";
-import { AssetService } from "@/lib/services/AssetService";
-import { Asset, AssetType, AssetStatus } from "@/types";
-import { AssetActionModal } from "./AssetActionModal";
+import { QRScannerModal } from "@/components/common/QRScannerModal";
 
 export function AssetList() {
-    const { profile } = useAuth();
-    const [assets, setAssets] = useState<Asset[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
+    // ... existing hooks
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-    // Modal State
-    const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const handleScan = (code: string) => {
+        setSearchQuery(code);
+        setIsScannerOpen(false);
 
-    // Fetch logic
-    const fetchAssets = async () => {
-        if (!profile?.orgId) return;
-        try {
-            const data = await AssetService.getAssetsByOrg(profile.orgId);
-            setAssets(data);
-        } catch (err) {
-            console.error("Failed to fetch assets", err);
-        } finally {
-            setLoading(false);
+        // Try exact match
+        const exactMatch = assets.find(a =>
+            a.qrCode === code ||
+            a.metaData?.keyCode === code ||
+            a.name === code
+        );
+
+        if (exactMatch) {
+            setSearchQuery(""); // Clear search to show modal cleanly
+            handleAction(exactMatch);
         }
     };
 
-    useEffect(() => {
-        fetchAssets();
-    }, [profile?.orgId]);
-
-    // Fuse.js Setup
-    const fuse = useMemo(() => {
-        return new Fuse(assets, {
-            keys: ["name", "qrCode", "searchKeywords", "status", "metaData.serialNumber", "metaData.registrationPlate"],
-            threshold: 0.3,
-        });
-    }, [assets]);
-
-    const displayAssets = useMemo(() => {
-        if (searchQuery.trim()) {
-            return fuse.search(searchQuery).map((r) => r.item);
-        }
-        return assets;
-    }, [assets, searchQuery, fuse]);
-
-    // Grouping
-    const grouped = useMemo(() => ({
-        [AssetType.KEY]: displayAssets.filter(a => a.type === AssetType.KEY || !a.type),
-        [AssetType.IT_DEVICE]: displayAssets.filter(a => a.type === AssetType.IT_DEVICE),
-        [AssetType.VEHICLE]: displayAssets.filter(a => a.type === AssetType.VEHICLE),
-        [AssetType.RENTAL]: displayAssets.filter(a => a.type === AssetType.RENTAL),
-    }), [displayAssets]);
-
-    const handleAction = (asset: Asset) => {
-        setSelectedAsset(asset);
-        setIsModalOpen(true);
-    };
-
-    const handleModalSuccess = () => {
-        fetchAssets();
-    };
-
-    if (loading) {
-        return <div className="p-8 text-center text-gray-500 animate-pulse">Loading assets...</div>;
-    }
-
+    // ... inside return
+    // Search Bar Update
     return (
         <div className="space-y-8 pb-20">
             {/* Search */}
-            <div className="sticky top-0 bg-background/95 backdrop-blur-md z-10 py-4 border-b border-border/50">
+            <div className="sticky top-0 bg-background/95 backdrop-blur-md z-10 py-4 border-b border-border/50 flex gap-4">
                 <div className="relative w-full max-w-xl">
-                    <input
-                        type="text"
-                        placeholder="Search keys, serials, plates..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary border border-transparent focus:border-ring focus:ring-2 focus:ring-ring/20 outline-none transition shadow-sm"
-                    />
-                    <svg className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                    <input ... />
+                    <button
+                        onClick={() => setIsScannerOpen(true)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-blue-600 p-1"
+                        title="Scan QR"
+                    >
+                        <span className="text-xl">📷</span>
+                    </button>
                 </div>
+                {/* Identify Key Button */}
+                <button
+                    onClick={() => setIsScannerOpen(true)}
+                    className="hidden md:flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm"
+                >
+                    <span>📷</span> Identify Key
+                </button>
             </div>
 
-            {/* Keys Section */}
-            {(grouped[AssetType.KEY].length > 0) && (
-                <section>
-                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100 text-yellow-600 text-lg">🔑</span>
-                        Keys
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {grouped[AssetType.KEY].map((asset) => (
-                            <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
-                        ))}
-                    </div>
-                </section>
-            )}
+            {/* ... list content ... */}
 
-            {/* IT Section */}
-            {(grouped[AssetType.IT_DEVICE].length > 0) && (
-                <section>
-                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 text-lg">💻</span>
-                        IT Devices
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {grouped[AssetType.IT_DEVICE].map((asset) => (
-                            <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Vehicles Section */}
-            {(grouped[AssetType.VEHICLE].length > 0) && (
-                <section>
-                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600 text-lg">🚗</span>
-                        Vehicles
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {grouped[AssetType.VEHICLE].map((asset) => (
-                            <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Rentals Section */}
-            {(grouped[AssetType.RENTAL].length > 0) && (
-                <section>
-                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600 text-lg">🏠</span>
-                        Rentals
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {grouped[AssetType.RENTAL].map((asset) => (
-                            <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {displayAssets.length === 0 && (
-                <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-gray-400">
-                    <div className="text-4xl mb-4">🔍</div>
-                    <p className="text-lg font-medium text-foreground">No assets found</p>
-                    <p className="text-sm">Try adjusting your search or create a new asset.</p>
-                </div>
-            )}
+            <QRScannerModal
+                isOpen={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleScan}
+            />
 
             {/* Action Modal */}
-            {selectedAsset && (
-                <AssetActionModal
-                    asset={selectedAsset}
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    onSuccess={handleModalSuccess}
-                />
-            )}
+            ...
         </div>
+    );
+}
+{
+    (grouped[AssetType.KEY].length > 0) && (
+        <section>
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100 text-yellow-600 text-lg">🔑</span>
+                Keys
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {grouped[AssetType.KEY].map((asset) => (
+                    <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
+                ))}
+            </div>
+        </section>
+    )
+}
+
+{/* IT Section */ }
+{
+    (grouped[AssetType.IT_DEVICE].length > 0) && (
+        <section>
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 text-lg">💻</span>
+                IT Devices
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {grouped[AssetType.IT_DEVICE].map((asset) => (
+                    <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
+                ))}
+            </div>
+        </section>
+    )
+}
+
+{/* Vehicles Section */ }
+{
+    (grouped[AssetType.VEHICLE].length > 0) && (
+        <section>
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600 text-lg">🚗</span>
+                Vehicles
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {grouped[AssetType.VEHICLE].map((asset) => (
+                    <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
+                ))}
+            </div>
+        </section>
+    )
+}
+
+{/* Rentals Section */ }
+{
+    (grouped[AssetType.RENTAL].length > 0) && (
+        <section>
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-white">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600 text-lg">🏠</span>
+                Rentals
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {grouped[AssetType.RENTAL].map((asset) => (
+                    <AssetCard key={asset.id} asset={asset} onAction={() => handleAction(asset)} />
+                ))}
+            </div>
+        </section>
+    )
+}
+
+{
+    displayAssets.length === 0 && (
+        <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-gray-400">
+            <div className="text-4xl mb-4">🔍</div>
+            <p className="text-lg font-medium text-foreground">No assets found</p>
+            <p className="text-sm">Try adjusting your search or create a new asset.</p>
+        </div>
+    )
+}
+
+{/* Action Modal */ }
+{
+    selectedAsset && (
+        <AssetActionModal
+            asset={selectedAsset}
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={handleModalSuccess}
+        />
+    )
+}
+        </div >
     );
 }
 

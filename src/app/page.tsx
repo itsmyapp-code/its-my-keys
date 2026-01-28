@@ -138,10 +138,21 @@ export default function Dashboard() {
 
   const handleScan = (code: string) => {
     setQuery(code);
-    // Check for exact match immediately
-    const res = search(code);
-    if (res.keys.length === 1) {
-      handleKeyClick(res.keys[0]);
+    setIsScannerOpen(false); // Close scanner UI immediately so modal can show
+
+    // Try to find exact match immediately
+    const exactMatch = assets.find(a =>
+      a.qrCode === code ||
+      a.metaData?.keyCode === code ||
+      a.name === code
+    );
+
+    if (exactMatch) {
+      // Clear query so list doesn't filter awkwardly behind modal
+      setQuery("");
+      handleKeyClick(exactMatch);
+    } else {
+      // If no exact match, keep query so user sees list results (fuzzy)
     }
   };
 
