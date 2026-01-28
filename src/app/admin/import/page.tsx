@@ -55,12 +55,12 @@ export default function ImportPage() {
         try {
             const lines = csvContent.split("\n").map(l => l.trim()).filter(l => l && !l.toLowerCase().startsWith("key id"));
 
-            // 1. Parse: Key ID, Asset Name, Location, Quantity
+            // 1. Parse: Key ID, Asset Name, Location, Quantity, QR Code (Optional)
             const rows = lines.map(line => {
-                // Split by comma, but be careful with quotes if needed (simple split for now)
-                const [key_id, asset_name, location, qtyStr] = line.split(",").map(c => c.trim());
+                // Split by comma
+                const [key_id, asset_name, location, qtyStr, qr_code] = line.split(",").map(c => c.trim());
                 const quantity = parseInt(qtyStr) || 1;
-                return { key_id, asset_name, location: location || asset_name, quantity };
+                return { key_id, asset_name, location: location || asset_name, quantity, qr_code };
             }).filter(r => r.key_id && r.asset_name);
 
             addLog(`Parsed ${rows.length} rows to process.`);
@@ -93,7 +93,7 @@ export default function ImportPage() {
                         orgId: profile.orgId,
                         name: row.asset_name,
                         area: row.location,
-                        type: AssetType.FACILITY, // Use FACILITY for these generic parents so they don't clog up the Rentals list
+                        type: AssetType.FACILITY,
                         status: AssetStatus.AVAILABLE,
                         totalKeys: row.quantity,
                         metaData: {}
@@ -117,7 +117,8 @@ export default function ImportPage() {
                             assetId: assetId,
                             location: row.location,
                             loanType: "STANDARD",
-                        }
+                        },
+                        qrCode: row.qr_code || undefined // Pass QR Code
                     });
                     createdKeysCount++;
                 }
@@ -147,7 +148,7 @@ export default function ImportPage() {
             </div>
 
             <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Paste CSV content. Format: <code>Key ID, Name, Location, Quantity</code>
+                Paste CSV content. Format: <code>Key ID, Name, Location, Quantity, [QR Code]</code>
             </p>
 
             <div className="mb-4">
@@ -155,7 +156,7 @@ export default function ImportPage() {
                     className="h-64 w-full rounded-lg border border-gray-300 p-4 font-mono text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     value={csvContent}
                     onChange={e => setCsvContent(e.target.value)}
-                    placeholder={`A1, Bedroom 1, 58 Victoria Road, 5\nMAS, Master Key, 58 Victoria Road, 4`}
+                    placeholder={`A1, Bedroom 1, 58 Victoria Road, 1, QR123456\nMAS, Master Key, 58 Victoria Road, 1, QR987654`}
                 />
             </div>
 
@@ -174,10 +175,10 @@ export default function ImportPage() {
                         <strong>Format:</strong> Data must be Comma Separated (CSV).
                     </li>
                     <li>
-                        <strong>Columns:</strong> <code>Key ID, Name, Location, Quantity</code>
+                        <strong>Columns:</strong> <code>Key ID, Name, Location, Quantity, QR Code (Optional)</code>
                     </li>
                     <li>
-                        <strong>Example:</strong> <code>A1, Bedroom 1, 58 Victoria Road, 5</code>
+                        <strong>Example:</strong> <code>A1, Bedroom 1, 58 Victoria Road, 1, QR123456</code>
                     </li>
                     <li>
                         This will create 1 Asset ("Bedroom 1") and 5 Keys (all with tag "A1") linked to it.

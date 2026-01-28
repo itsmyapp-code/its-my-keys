@@ -58,7 +58,7 @@ export default function AddKeyPage() {
         }, 100);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent, isBulk: boolean = false) => {
         e.preventDefault();
         if (!profile?.orgId) {
             setError("Organization ID not found. Please sign in again.");
@@ -86,7 +86,7 @@ export default function AddKeyPage() {
                     orgId: profile.orgId,
                     name: formData.assetName,
                     area: formData.area || "General",
-                    type: AssetType.FACILITY, // Default to FACILITY for key parents (doors, buildings) so they don't appear as Rentals
+                    type: AssetType.FACILITY,
                     status: AssetStatus.AVAILABLE,
                     metaData: {},
                     totalKeys: 1
@@ -110,8 +110,18 @@ export default function AddKeyPage() {
                 qrCode: formData.qrCode || undefined
             });
 
-            setSuccess(`Successfully added Key ${formData.keyId}`);
-            setFormData({ keyId: "", assetName: "", area: "", qrCode: "" }); // Reset
+            if (isBulk) {
+                setSuccess(`Saved ${formData.keyId}. Ready for next.`);
+                setFormData({ keyId: "", assetName: "", area: "", qrCode: "" });
+                // Focus QR input for rapid scanning
+                setTimeout(() => {
+                    const qrInput = document.querySelector('input[placeholder*="Scan tag"]') as HTMLInputElement;
+                    qrInput?.focus();
+                }, 100);
+            } else {
+                setSuccess(`Successfully added Key ${formData.keyId}. Redirecting...`);
+                setTimeout(() => router.push("/admin/assets"), 1000);
+            }
         } catch (err: any) {
             console.error(err);
             setError(err.message || "Failed to create key.");
@@ -218,13 +228,24 @@ export default function AddKeyPage() {
                         </div>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700"
-                    >
-                        {loading ? "Adding Key..." : "Add Key"}
-                    </button>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            disabled={loading}
+                            onClick={(e) => handleSubmit(e, true)}
+                            className="rounded-lg border border-blue-600 bg-white px-5 py-2.5 text-center text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-50 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
+                        >
+                            {loading ? "Saving..." : "Save & Add Another"}
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            onClick={(e) => handleSubmit(e, false)}
+                            className="rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700"
+                        >
+                            {loading ? "Adding..." : "Add Key & Exit"}
+                        </button>
+                    </div>
                 </form>
             </div>
 
