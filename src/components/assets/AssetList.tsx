@@ -1,16 +1,61 @@
 "use client";
 
+import { useState, useMemo } from "react";
+import { useInventory } from "@/contexts/InventoryContext"; // Use InventoryContext for data
+import { Asset, AssetType, AssetStatus } from "@/types";
+import { AssetActionModal } from "./AssetActionModal";
 import { QRScannerModal } from "@/components/common/QRScannerModal";
 
 export function AssetList() {
-    // ... existing hooks
+    const { assets, loading, search } = useInventory(); // Use context
+    const [searchQuery, setSearchQuery] = useState("");
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+    // Modal State
+    const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Handle Search / Filtering
+    const displayAssets = useMemo(() => {
+        if (!searchQuery) return assets;
+        return search(searchQuery).assets;
+    }, [assets, searchQuery, search]);
+
+    // Grouping Logic
+    const grouped = useMemo(() => {
+        const groups = {
+            [AssetType.KEY]: [] as Asset[],
+            [AssetType.IT_DEVICE]: [] as Asset[],
+            [AssetType.VEHICLE]: [] as Asset[],
+            [AssetType.RENTAL]: [] as Asset[],
+            [AssetType.FACILITY]: [] as Asset[]
+        };
+
+        displayAssets.forEach(asset => {
+            if (groups[asset.type]) {
+                groups[asset.type].push(asset);
+            }
+        });
+
+        return groups;
+    }, [displayAssets]);
+
+    const handleAction = (asset: Asset) => {
+        setSelectedAsset(asset);
+        setIsModalOpen(true);
+    };
+
+    const handleModalSuccess = () => {
+        // Data updates via subscription automatically
+        setIsModalOpen(false);
+        setSelectedAsset(null);
+    };
 
     const handleScan = (code: string) => {
         setSearchQuery(code);
         setIsScannerOpen(false);
 
-        // Try exact match
+        // Try exact match in current list or full list
         const exactMatch = assets.find(a =>
             a.qrCode === code ||
             a.metaData?.keyCode === code ||
@@ -22,6 +67,10 @@ export function AssetList() {
             handleAction(exactMatch);
         }
     };
+
+    if (loading) {
+        return <div className="p-10 text-center animate-pulse">Loading Assets...</div>;
+    }
 
     // ... inside return
     // Search Bar Update
