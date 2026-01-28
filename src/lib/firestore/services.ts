@@ -74,8 +74,10 @@ export const updateKeyStatus = async (
 
     if (status === "CHECKED_OUT") {
         updateData.checkedOutAt = Timestamp.now();
+        updateData["metaData.checkedOutAt"] = Timestamp.now();
     } else if (status === "AVAILABLE") {
         updateData.checkedOutAt = null;
+        updateData["metaData.checkedOutAt"] = null;
     }
 
     await updateDoc(keyRef, updateData);
