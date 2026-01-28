@@ -47,7 +47,12 @@ export default function AddKeyPage() {
     };
 
     const handleScan = (code: string) => {
-        setFormData(prev => ({ ...prev, qrCode: code, keyId: code }));
+        setFormData(prev => ({
+            ...prev,
+            qrCode: code,
+            keyId: code,
+            assetName: code // Auto-fill Asset Name too per user request
+        }));
         setTimeout(() => {
             keyIdInputRef.current?.focus();
         }, 100);
