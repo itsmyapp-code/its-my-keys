@@ -72,33 +72,6 @@ export const AssetService = {
     },
 
     /**
-     * Delete ALL assets for an organization (Danger Zone)
-     */
-    deleteAllAssets: async (orgId: string) => {
-        const q = query(
-            collection(db, ASSETS_COLLECTION),
-            where("orgId", "==", orgId)
-        );
-        const snapshot = await getDocs(q);
-
-        // Firestore batches limited to 500 ops
-        const batchSize = 500;
-        const chunks = [];
-
-        for (let i = 0; i < snapshot.docs.length; i += batchSize) {
-            chunks.push(snapshot.docs.slice(i, i + batchSize));
-        }
-
-        for (const chunk of chunks) {
-            const batch = writeBatch(db);
-            chunk.forEach(doc => {
-                batch.delete(doc.ref);
-            });
-            await batch.commit();
-        }
-    },
-
-    /**
      * Check OUT an asset
      */
     checkOut: async (assetId: string, actorId: string, actorName: string, recipientName: string, notes?: string) => {
