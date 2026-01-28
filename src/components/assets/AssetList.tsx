@@ -1,15 +1,26 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useInventory } from "@/contexts/InventoryContext"; // Use InventoryContext for data
 import { Asset, AssetType, AssetStatus } from "@/types";
 import { AssetActionModal } from "./AssetActionModal";
 import { QRScannerModal } from "@/components/common/QRScannerModal";
+import { useSearchParams } from "next/navigation";
 
 export function AssetList() {
     const { assets, loading, search } = useInventory(); // Use context
     const [searchQuery, setSearchQuery] = useState("");
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+    // Check for ?action=scan
+    const searchParams = useSearchParams();
+    const action = searchParams.get("action");
+
+    useEffect(() => {
+        if (action === "scan") {
+            setIsScannerOpen(true);
+        }
+    }, [action]);
 
     // Modal State
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
