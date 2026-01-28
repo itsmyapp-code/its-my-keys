@@ -89,6 +89,15 @@ export default function Dashboard() {
     setIsModalOpen(true);
   };
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (results.keys.length === 1) {
+        handleKeyClick(results.keys[0]);
+        e.currentTarget.blur();
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center p-10">
@@ -110,9 +119,10 @@ export default function Dashboard() {
           <input
             type="search"
             className="block w-full rounded-lg border border-gray-300 bg-white p-4 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            placeholder="Search assets, holders, or details..."
+            placeholder="Search assets, holders, or scan QR code..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
           />
         </div>
       </div>

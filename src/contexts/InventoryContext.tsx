@@ -75,7 +75,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     }), [assets]);
 
     const fuseKeys = useMemo(() => new Fuse(keys, {
-        keys: ["assetName", "area", "id", "currentHolder", "status"],
+        keys: ["assetName", "area", "id", "currentHolder", "status", "qrCode", "searchKeywords"],
         threshold: 0.3,
     }), [keys]);
 
