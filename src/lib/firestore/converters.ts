@@ -22,25 +22,25 @@ export const assetConverter: FirestoreDataConverter<Asset> = {
             metaData: data.metaData || {},
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
-            updatedAt: data.updatedAt,
             orgId: data.orgId, // Ensure orgId is passed through
             checkedOutAt: data.checkedOutAt // Critical for Time Out display
-        },
+        } as Asset;
+    },
 };
 
-    export const auditConverter: FirestoreDataConverter<Audit> = {
-        toFirestore(audit: Audit): DocumentData {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { id, ...data } = audit;
-            return data;
-        },
-            fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Audit {
-    const data = snapshot.data(options);
-    return {
-        id: snapshot.id,
-        date: data.date,
-        performedBy: data.performedBy,
-        missingKeys: data.missingKeys,
-    };
-},
+export const auditConverter: FirestoreDataConverter<Audit> = {
+    toFirestore(audit: Audit): DocumentData {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...data } = audit;
+        return data;
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Audit {
+        const data = snapshot.data(options);
+        return {
+            id: snapshot.id,
+            date: data.date,
+            performedBy: data.performedBy,
+            missingKeys: data.missingKeys,
+        };
+    },
 };
