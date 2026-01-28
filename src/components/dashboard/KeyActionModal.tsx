@@ -16,6 +16,7 @@ interface KeyActionModalProps {
 
 export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionModalProps) {
     const [parentAsset, setParentAsset] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
 
     // Fetch Parent Asset Info
     React.useEffect(() => {
