@@ -22,6 +22,7 @@ const SettingsPage = () => {
     // Maintenance State
     const [maintenanceLoading, setMaintenanceLoading] = useState(false);
     const [auditMsg, setAuditMsg] = useState("");
+    const [deleteAllLoading, setDeleteAllLoading] = useState(false);
 
     // Fetch Org Details
     useEffect(() => {
@@ -118,6 +119,32 @@ const SettingsPage = () => {
             setAuditMsg("Migration failed: " + err.message);
         } finally {
             setMaintenanceLoading(false);
+        }
+    };
+
+    const handleDeleteAllAssets = async () => {
+        if (!profile?.orgId) return;
+        // 1. Initial Confirm
+        if (!confirm("⚠️ DANGER: This will delete ALL assets, keys, and history for your organization.\n\nThis action cannot be undone.\n\nAre you sure you want to proceed?")) return;
+
+        // 2. Secondary Confirmation
+        const confirmation = prompt("To confirm deletion, please type 'DELETE' in the box below:");
+        if (confirmation !== "DELETE") {
+            alert("Deletion cancelled. Text did not match.");
+            return;
+        }
+
+        setDeleteAllLoading(true);
+        try {
+            const { AssetService } = await import("@/lib/services/AssetService");
+            await AssetService.deleteAllAssets(profile.orgId);
+            alert("All assets have been deleted.");
+            window.location.reload(); // Reload to clear state/cache
+        } catch (err: any) {
+            console.error(err);
+            alert("Failed to delete assets: " + err.message);
+        } finally {
+            setDeleteAllLoading(false);
         }
     };
 
@@ -247,6 +274,21 @@ const SettingsPage = () => {
                             className="px-3 py-1.5 text-xs font-bold bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
                             {maintenanceLoading ? "Scanning..." : "Run Migration"}
+                        </button>
+                    </div>
+
+                    {/* Delete All Data */}
+                    <div className="flex items-center justify-between p-3 bg-red-100 rounded-lg border border-red-200 dark:bg-red-900/40 dark:border-red-800">
+                        <div>
+                            <h4 className="font-bold text-red-800 dark:text-red-300">Reset Data</h4>
+                            <p className="text-xs text-red-700 dark:text-red-400">Permanently delete ALL assets and keys. Start fresh.</p>
+                        </div>
+                        <button
+                            onClick={handleDeleteAllAssets}
+                            disabled={deleteAllLoading}
+                            className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 border border-red-700 rounded shadow-sm hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500"
+                        >
+                            {deleteAllLoading ? "Deleting..." : "DELETE ALL DATA"}
                         </button>
                     </div>
 

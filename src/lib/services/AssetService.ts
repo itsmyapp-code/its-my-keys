@@ -9,7 +9,8 @@ import {
     Timestamp,
     serverTimestamp,
     deleteDoc,
-    getDoc
+    getDoc,
+    writeBatch
 } from "firebase/firestore";
 import { db } from "../firebase/client";
 import { Asset, AssetStatus, Log, AssetType } from "@/types";
@@ -68,6 +69,33 @@ export const AssetService = {
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
+    },
+
+    /**
+     * Delete ALL assets for an organization (Danger Zone)
+     */
+    deleteAllAssets: async (orgId: string) => {
+        const q = query(
+            collection(db, ASSETS_COLLECTION),
+            where("orgId", "==", orgId)
+        );
+        const snapshot = await getDocs(q);
+
+        // Firestore batches limited to 500 ops
+        const batchSize = 500;
+        const chunks = [];
+
+        for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+            chunks.push(snapshot.docs.slice(i, i + batchSize));
+        }
+
+        for (const chunk of chunks) {
+            const batch = writeBatch(db);
+            chunk.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
     },
 
     /**
@@ -173,31 +201,20 @@ export const AssetService = {
         );
         const snapshot = await getDocs(q);
 
-        // Delete in batches of 500
+        // Firestore batches limited to 500 ops
         const batchSize = 500;
-        let batch = import("firebase/firestore").then(mod => mod.writeBatch(db)).then(async (batch) => {
-            let count = 0;
-            // Need to await the dynamic import or just use writeBatch from import if available at top
-            // To simplify, let's just loop and delete for now or use properly imported writeBatch
-            // Re-using the logic from top imports
-            const { writeBatch } = await import("firebase/firestore");
-            let currentBatch = writeBatch(db);
+        const chunks = [];
+        for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+            chunks.push(snapshot.docs.slice(i, i + batchSize));
+        }
 
-            for (const document of snapshot.docs) {
-                currentBatch.delete(document.ref);
-                count++;
-                if (count >= batchSize) {
-                    await currentBatch.commit();
-                    currentBatch = writeBatch(db);
-                    count = 0;
-                }
-            }
-            if (count > 0) {
-                await currentBatch.commit();
-            }
-        });
-
-        await batch;
+        for (const chunk of chunks) {
+            const batch = writeBatch(db);
+            chunk.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
     }
 };
 
