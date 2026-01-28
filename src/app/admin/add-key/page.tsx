@@ -81,7 +81,7 @@ export default function AddKeyPage() {
                     orgId: profile.orgId,
                     name: formData.assetName,
                     area: formData.area || "General",
-                    type: AssetType.RENTAL, // Defaulting to Rental/Facility? Or create a new type. Using RENTAL as placeholder.
+                    type: AssetType.FACILITY, // Default to FACILITY for key parents (doors, buildings) so they don't appear as Rentals
                     status: AssetStatus.AVAILABLE,
                     metaData: {},
                     totalKeys: 1
