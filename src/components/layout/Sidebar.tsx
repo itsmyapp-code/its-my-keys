@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useInventory } from "@/contexts/InventoryContext"; // Allow looking up assets
 import { QRScannerModal } from "@/components/common/QRScannerModal";
 import { KeyActionModal } from "@/components/dashboard/KeyActionModal";
@@ -26,37 +26,58 @@ interface SidebarProps {
     onClose: () => void;
 }
 
+// Helper component to handle URL params safely within Suspense
+function UrlScanner({ onScan }: { onScan: (code: string, silent: boolean) => void }) {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    useEffect(() => {
+        const scanCode = searchParams.get('scan');
+        if (scanCode) {
+            onScan(scanCode, true); // Call handleScan with silent true
+            // Clean URL
+            router.replace(pathname);
+        }
+    }, [searchParams, onScan, router, pathname]);
+
+    return null;
+}
+
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const { user, profile, logout } = useAuth();
-    const { assets } = useInventory(); // Get assets for lookup
+    const { assets, loading } = useInventory(); // Get assets for lookup
 
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 
-    const handleScan = (code: string) => {
+    const handleScan = (code: string, silent: boolean = false) => {
         setIsScannerOpen(false);
 
         // precise match logic similar to Dashboard
         const exactMatch = assets.find(a =>
             a.qrCode === code ||
             a.metaData?.keyCode === code ||
-            a.name === code
+            a.name === code ||
+            a.id === code // Also check ID
         );
 
         if (exactMatch) {
             setSelectedAsset(exactMatch);
             setIsModalOpen(true);
         } else {
-            // Fallback: If not found, maybe redirect to assets page with search?
-            // Or just alert. Redirect is useful if it's a fuzzy match case.
-            if (confirm(`Asset "${code}" not found directly. Search for it on Assets page?`)) {
-                router.push(`/admin/assets?action=scan&q=${encodeURIComponent(code)}`); // We might need to handle 'q' param in AssetList later but for now let's just go there.
-                // actually AssetList checks query param? No, it handles action=scan.
-                // Simpler: Just go to assets page and let them try there?
-                // actually just showing alert is safer.
+            if (!silent) {
+                // Fallback: If not found, maybe redirect to assets page with search?
+                // Or just alert. Redirect is useful if it's a fuzzy match case.
+                if (confirm(`Asset "${code}" not found directly. Search for it on Assets page?`)) {
+                    router.push(`/admin/assets?action=scan&q=${encodeURIComponent(code)}`); // We might need to handle 'q' param in AssetList later but for now let's just go there.
+                    // actually AssetList checks query param? No, it handles action=scan.
+                    // Simpler: Just go to assets page and let them try there?
+                    // actually just showing alert is safer.
+                }
             }
         }
     };
@@ -65,6 +86,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     return (
         <>
+            <Suspense>
+                <UrlScanner onScan={handleScan} />
+            </Suspense>
+
             {/* Mobile Backdrop */}
             {isOpen && (
                 <div
