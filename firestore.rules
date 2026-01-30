@@ -3,26 +3,41 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: Get the authenticated user's profile
-    function belongsToOrg(orgId) {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
-             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId;
+    // --- Helpers ---
+    
+    // Get the authenticated user's profile data
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
+
+    // Check if user belongs to the organization
+    function belongsToOrg(orgId) {
+      let userData = getUserData();
+      return userData.orgId == orgId;
+    }
+
+    // Check if user is an Admin of the organization
+    function isOrgAdmin(orgId) {
+      let userData = getUserData();
+      return userData.orgId == orgId && (userData.role == 'ORG_ADMIN' || userData.role == 'SUPER_ADMIN');
+    }
+
+    // --- Collections ---
 
     // USERS Collection
     match /users/{userId} {
-      // Allow any authenticated user to read/write profiles (Unblocking setup)
+      // Allow any authenticated user to read/write their OWN profile (Unblocking setup)
       allow read, write: if request.auth != null;
     }
 
     // ORGANIZATIONS Collection
     match /organizations/{orgId} {
-      // Valid users can read their own org
+      // Members can read their org
       allow read: if request.auth != null && belongsToOrg(orgId);
-      // Allow creation of new organizations by anyone authenticated
+      // Only authenticated users can create (initially)
       allow create: if request.auth != null;
-      // Allow updates by anyone authenticated (Unblocking setup)
-      allow update: if request.auth != null;
+      // Only Admins can update their org details
+      allow update: if request.auth != null && isOrgAdmin(orgId);
     }
 
     // ASSETS Collection (Polymorphic)
@@ -33,20 +48,18 @@ service cloud.firestore {
       // Create: Must assign to own Org
       allow create: if request.auth != null && belongsToOrg(request.resource.data.orgId);
       
-      // Update: Must maintain own Org and not change it
+      // Update: Must maintain own Org. Members can update (check-in/out), but maybe restrict sensitive fields later.
       allow update: if request.auth != null 
                     && belongsToOrg(resource.data.orgId)
                     && request.resource.data.orgId == resource.data.orgId;
                     
-      // Delete: Must belong to same Org
-      allow delete: if request.auth != null && belongsToOrg(resource.data.orgId);
+      // Delete: Only Admins can delete assets
+      allow delete: if request.auth != null && isOrgAdmin(resource.data.orgId);
     }
 
     // LOGS Collection
     match /logs/{logId} {
       allow read: if request.auth != null && belongsToOrg(resource.data.orgId);
-      // Logs are usually created by backend or strict client logic. 
-      // For now, allow create if matches org.
       allow create: if request.auth != null && belongsToOrg(request.resource.data.orgId);
     }
   }

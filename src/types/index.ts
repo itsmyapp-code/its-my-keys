@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type Role = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'USER';
+export type Role = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'MANAGER' | 'WORKER' | 'USER';
 
 export enum AssetType {
     KEY = 'KEY',
@@ -23,6 +23,15 @@ export interface Organization {
     name: string;
     subscriptionStatus: 'ACTIVE' | 'TRIAL' | 'PAST_DUE' | 'CANCELLED';
     createdAt: Timestamp;
+}
+
+export interface MemberProfile {
+    uid: string;
+    email: string;
+    displayName: string;
+    role: Role;
+    photoURL?: string;
+    joinedAt: Timestamp;
 }
 
 export interface UserProfile {

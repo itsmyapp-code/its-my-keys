@@ -84,27 +84,30 @@ export const AssetService = {
     /**
      * Check OUT an asset
      */
-    checkOut: async (assetId: string, actorId: string, actorName: string, recipientName: string, notes?: string) => {
+    checkOut: async (assetId: string, userId: string, userEmail: string, recipient: string, notes?: string, dueDate: Timestamp | null = null) => {
+        // 1. Update Asset Status
+        const { updateKeyStatus } = await import("@/lib/firestore/services");
+
+        // Fetch asset
         const assetRef = doc(db, ASSETS_COLLECTION, assetId);
         const assetSnap = await getDoc(assetRef);
 
         if (!assetSnap.exists()) throw new Error("Asset not found");
-        const asset = assetSnap.data() as Asset;
+        const asset = { id: assetSnap.id, ...assetSnap.data() } as Asset;
 
         if (asset.status !== AssetStatus.AVAILABLE) {
             throw new Error("Asset is not available");
         }
 
-        // Transaction/Batch would be better, but simple promises for now
-
-        // 1. Update Asset Status
-        await updateDoc(assetRef, {
-            status: AssetStatus.CHECKED_OUT,
-            updatedAt: serverTimestamp(),
-            checkedOutAt: serverTimestamp(), // Root for generic access
-            "metaData.checkedOutAt": serverTimestamp(), // Metadata for display consistency
-            "metaData.currentHolder": recipientName // Explicitly track who has it
-        });
+        await updateKeyStatus(
+            asset.orgId,
+            assetId,
+            "CHECKED_OUT",
+            recipient,
+            null,
+            "STANDARD",
+            dueDate
+        );
 
         // 2. Create Log Entry
         await addLog({
@@ -112,9 +115,9 @@ export const AssetService = {
             assetId,
             assetName: asset.name,
             action: 'CHECK_OUT',
-            actorId,
-            actorName,
-            notes: `Handed to: ${recipientName}. ${notes || ""}`
+            actorId: userId,
+            actorName: userEmail,
+            notes: notes ? `${notes} (Handed to: ${recipient})` : `Handed to: ${recipient}`
         });
     },
 
@@ -126,12 +129,15 @@ export const AssetService = {
         const assetSnap = await getDoc(assetRef);
 
         if (!assetSnap.exists()) throw new Error("Asset not found");
-        const asset = assetSnap.data() as Asset;
+        const asset = { id: assetSnap.id, ...assetSnap.data() } as Asset; // Fix casting safely
 
         await updateDoc(assetRef, {
             status: AssetStatus.AVAILABLE,
             updatedAt: serverTimestamp(),
-            "metaData.currentHolder": null
+            checkedOutAt: null,
+            "metaData.checkedOutAt": null,
+            "metaData.currentHolder": null,
+            "metaData.dueDate": null // Clear due date
         });
 
         await addLog({

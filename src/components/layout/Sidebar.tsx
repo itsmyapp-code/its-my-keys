@@ -16,6 +16,8 @@ const NAV_ITEMS = [
     { label: "Audit Mode", href: "/admin/audit" },
     { label: "Active Loans", href: "/admin/reports" },
     { label: "Import Keys", href: "/admin/import" },
+    { label: "Team", href: "/admin/team" },
+    { label: "Billing", href: "/admin/billing" },
     { label: "Settings", href: "/admin/settings" },
 ];
 

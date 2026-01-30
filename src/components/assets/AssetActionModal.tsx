@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Asset, AssetStatus } from "@/types";
 import { AssetService } from "@/lib/services/AssetService";
 import { useAuth } from "@/contexts/AuthContext";
+import { Timestamp } from "firebase/firestore";
 
 interface Props {
     asset: Asset;
@@ -20,6 +21,7 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
     // Action State
     const [recipient, setRecipient] = useState("");
     const [notes, setNotes] = useState("");
+    const [dueDate, setDueDate] = useState(""); // ISO String from input
     const [error, setError] = useState<string | null>(null);
 
     // Edit State
@@ -32,6 +34,9 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
         setEditMeta(asset.metaData || {});
         setMode('ACTION');
         setError(null);
+        setDueDate(""); // Reset due date
+        setRecipient("");
+        setNotes("");
     }, [asset]);
 
     if (!isOpen) return null;
@@ -42,7 +47,8 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
         setLoading(true);
         setError(null);
         try {
-            await AssetService.checkOut(asset.id, user.uid, user.email || "Unknown", recipient, notes);
+            const dueTimestamp = dueDate ? Timestamp.fromDate(new Date(dueDate)) : null;
+            await AssetService.checkOut(asset.id, user.uid, user.email || "Unknown", recipient, notes, dueTimestamp);
             onSuccess();
             onClose();
         } catch (err: any) {
@@ -248,6 +254,18 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
                                         placeholder="e.g. John Doe, Agent 47"
                                     />
                                 </div>
+
+                                {/* NEW: Time Back */}
+                                <div>
+                                    <label className="block text-sm font-medium text-foreground mb-1">Expected Return Time (Optional)</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={dueDate}
+                                        onChange={e => setDueDate(e.target.value)}
+                                        className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                    />
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-foreground mb-1">Notes (Optional)</label>
                                     <input
@@ -255,7 +273,7 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
                                         value={notes}
                                         onChange={e => setNotes(e.target.value)}
                                         className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
-                                        placeholder="Time out, expected return..."
+                                        placeholder="Condition, job ref..."
                                     />
                                 </div>
                                 <div className="pt-2 flex gap-3">
@@ -268,7 +286,12 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
                         ) : (
                             <div className="space-y-4">
                                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-200">
-                                    Currently held by: <strong>{asset.metaData?.currentHolder || "Unknown"}</strong>
+                                    <p>Currently held by: <strong>{asset.metaData?.currentHolder || "Unknown"}</strong></p>
+                                    {asset.metaData?.dueDate && (
+                                        <p className="mt-1 text-xs opacity-80">
+                                            Expected Back: {new Date(asset.metaData.dueDate.seconds * 1000).toLocaleString()}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>

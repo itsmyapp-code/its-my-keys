@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Scanner } from "@yudiel/react-qr-scanner";
 
 interface QRScannerModalProps {
@@ -11,6 +11,57 @@ interface QRScannerModalProps {
 
 export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps) {
     const [error, setError] = useState<string | null>(null);
+    const [nfcStatus, setNfcStatus] = useState<"IDLE" | "SCANNING" | "ERROR" | "UNSUPPORTED">("IDLE");
+    const [nfcError, setNfcError] = useState("");
+
+    // Initialize NFC
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const startNfc = async () => {
+            if (!('NDEFReader' in window)) {
+                setNfcStatus("UNSUPPORTED");
+                return;
+            }
+
+            try {
+                // @ts-ignore - Web NFC API is experimental
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                setNfcStatus("SCANNING");
+
+                // @ts-ignore
+                ndef.onreading = (event: any) => {
+                    const decoder = new TextDecoder();
+                    for (const record of event.message.records) {
+                        if (record.recordType === "text") {
+                            const text = decoder.decode(record.data);
+                            onScan(text);
+                            onClose();
+                            return;
+                        }
+                    }
+                    // Fallback: Use serial number if message empty
+                    if (event.serialNumber) {
+                        onScan(event.serialNumber);
+                        onClose();
+                    }
+                };
+
+                // @ts-ignore
+                ndef.onreadingerror = () => {
+                    setNfcError("NFC Read Failed");
+                };
+
+            } catch (err: any) {
+                console.error("NFC Error:", err);
+                setNfcStatus("ERROR");
+                setNfcError(err.message || "Failed to start NFC");
+            }
+        };
+
+        startNfc();
+    }, [isOpen, onScan, onClose]);
 
     if (!isOpen) return null;
 
@@ -30,7 +81,7 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
                 {/* Header */}
                 <div className="flex items-center justify-between bg-gray-800 p-4">
                     <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-                        <span className="text-blue-400">📸</span> Scan QR Code
+                        <span className="text-blue-400">📸</span> Scan Asset
                     </h3>
                     <button
                         onClick={onClose}
@@ -73,11 +124,31 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="bg-gray-800 p-4 text-center">
-                    <p className="text-sm text-gray-400">
-                        Point your camera at a QR code to scan.
-                    </p>
+                {/* Status Footer */}
+                <div className="bg-gray-800 p-4 space-y-3">
+                    <div className="text-center">
+                        <p className="text-sm text-gray-400">
+                            Scan QR Code via Camera
+                        </p>
+                    </div>
+
+                    {/* NFC Indicator */}
+                    <div className={`p-2 rounded-lg border flex items-center justify-center gap-2 ${nfcStatus === 'SCANNING' ? 'bg-blue-900/20 border-blue-500/30 text-blue-300' :
+                            nfcStatus === 'ERROR' ? 'bg-red-900/20 border-red-500/30 text-red-300' :
+                                'bg-gray-700/50 border-gray-600 text-gray-500'
+                        }`}>
+                        {nfcStatus === 'SCANNING' && (
+                            <span className="relative flex h-2 w-2 mr-1">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                            </span>
+                        )}
+                        <span className="text-xs font-medium">
+                            {nfcStatus === 'SCANNING' ? "Ready to Tap NFC Tag" :
+                                nfcStatus === 'UNSUPPORTED' ? "NFC Not Supported on this device" :
+                                    nfcStatus === 'ERROR' ? nfcError : "NFC Inactive"}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

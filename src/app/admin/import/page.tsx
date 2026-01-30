@@ -14,6 +14,9 @@ export default function ImportPage() {
     const [logs, setLogs] = useState<string[]>([]);
     const [isClearing, setIsClearing] = useState(false);
 
+    // New state for Import Type
+    const [importType, setImportType] = useState<'KEYS' | 'ASSETS' | 'MEMBERS'>('KEYS');
+
     const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
 
     const handleClearDatabase = async () => {
@@ -26,9 +29,6 @@ export default function ImportPage() {
 
         setIsClearing(true);
         try {
-            // Dynamically import to avoid circular dep issues or just use Service
-            // We need to use AssetService here, but first we need to export it properly or import it
-            // Assuming AssetService is available via import
             const { AssetService } = await import("@/lib/services/AssetService");
             await AssetService.deleteAllAssets(profile.orgId);
             addLog("Database cleared successfully.");
@@ -41,6 +41,116 @@ export default function ImportPage() {
         }
     };
 
+    const importMembers = async (lines: string[]) => {
+        // Format: Email, Name, Role
+        const { TeamService } = await import("@/lib/services/TeamService");
+
+        for (const line of lines) {
+            const [email, name, roleStr] = line.split(",").map(s => s.trim());
+            if (!email) continue;
+
+            // Map role string to Role type
+            let role: any = "WORKER";
+            if (roleStr?.toUpperCase() === "ADMIN") role = "ORG_ADMIN";
+            if (roleStr?.toUpperCase() === "MANAGER") role = "MANAGER";
+            if (roleStr?.toUpperCase() === "USER") role = "USER";
+
+            try {
+                addLog(`Inviting ${email} as ${role}...`);
+                await TeamService.inviteMember(email, role, profile!.orgId);
+                addLog(`Success: ${email}`);
+            } catch (err: any) {
+                addLog(`Failed ${email}: ${err.message}`);
+            }
+        }
+    };
+
+    const importAssets = async (lines: string[], type: 'KEYS' | 'ASSETS') => {
+        const { AssetService } = await import("@/lib/services/AssetService");
+
+        // Asset Map to avoid creating duplicates
+        const assetMap = new Map<string, { id: string }>();
+        const existingAssets = await AssetService.getAssetsByOrg(profile!.orgId);
+        existingAssets.forEach(a => {
+            if (a.name) assetMap.set(a.name.toLowerCase(), { id: a.id });
+        });
+
+        let createdCount = 0;
+
+        for (const line of lines) {
+            if (type === 'KEYS') {
+                // Key Format: Key ID, Name, Location, Quantity, [QR Code]
+                const [key_id, asset_name, location, qtyStr, qr_code] = line.split(",").map(c => c.trim());
+                if (!key_id || !asset_name) continue;
+
+                const quantity = parseInt(qtyStr) || 1;
+                let assetId = "";
+
+                // Find or Create Parent Asset
+                if (assetMap.has(asset_name.toLowerCase())) {
+                    assetId = assetMap.get(asset_name.toLowerCase())!.id;
+                } else {
+                    addLog(`Creating Facility: ${asset_name}`);
+                    const newAsset = await AssetService.createAsset({
+                        orgId: profile!.orgId,
+                        name: asset_name,
+                        area: location || asset_name,
+                        type: AssetType.FACILITY,
+                        status: AssetStatus.AVAILABLE,
+                        totalKeys: quantity,
+                        metaData: {}
+                    });
+                    assetId = newAsset.id;
+                    assetMap.set(asset_name.toLowerCase(), { id: assetId });
+                }
+
+                addLog(`Creating ${quantity} keys for tag ${key_id}...`);
+                for (let i = 0; i < quantity; i++) {
+                    await AssetService.createAsset({
+                        orgId: profile!.orgId,
+                        name: key_id,
+                        type: AssetType.KEY,
+                        status: AssetStatus.AVAILABLE,
+                        area: location,
+                        metaData: {
+                            keyCode: key_id, // Store tag in keyCode
+                            assetId: assetId,
+                            location: location,
+                            loanType: "STANDARD",
+                        },
+                        qrCode: qr_code || undefined
+                    });
+                    createdCount++;
+                }
+            } else {
+                // Generic Asset Format: Type, Name, Serial/ID, Location
+                // ex: IT_DEVICE, MacBook Pro, SN123456, Office 1
+                const [assetTypeStr, name, serial, location] = line.split(",").map(c => c.trim());
+                if (!name) continue;
+
+                let assetType = AssetType.IT_DEVICE; // Default
+                if (assetTypeStr?.toUpperCase().includes("VEHICLE")) assetType = AssetType.VEHICLE;
+                if (assetTypeStr?.toUpperCase() === "IT") assetType = AssetType.IT_DEVICE;
+                if (assetTypeStr?.toUpperCase() === "FACILITY") assetType = AssetType.FACILITY;
+
+                addLog(`Creating ${assetType}: ${name}`);
+                await AssetService.createAsset({
+                    orgId: profile!.orgId,
+                    name: name,
+                    type: assetType,
+                    status: AssetStatus.AVAILABLE,
+                    area: location,
+                    metaData: {
+                        serialNumber: serial,
+                        location: location
+                    }
+                });
+                createdCount++;
+            }
+        }
+        addLog(`Import complete. Created ${createdCount} items.`);
+    };
+
     const handleImport = async () => {
         if (!csvContent.trim()) return;
         if (!profile?.orgId) {
@@ -50,81 +160,17 @@ export default function ImportPage() {
 
         setImporting(true);
         setLogs([]);
-        addLog("Starting import...");
+        addLog(`Starting import for ${importType}...`);
 
         try {
-            const lines = csvContent.split("\n").map(l => l.trim()).filter(l => l && !l.toLowerCase().startsWith("key id"));
+            const lines = csvContent.split("\n").map(l => l.trim()).filter(l => l && !l.toLowerCase().startsWith("type") && !l.toLowerCase().startsWith("key id") && !l.toLowerCase().startsWith("email"));
 
-            // 1. Parse: Key ID, Asset Name, Location, Quantity, QR Code (Optional)
-            const rows = lines.map(line => {
-                // Split by comma
-                const [key_id, asset_name, location, qtyStr, qr_code] = line.split(",").map(c => c.trim());
-                const quantity = parseInt(qtyStr) || 1;
-                return { key_id, asset_name, location: location || asset_name, quantity, qr_code };
-            }).filter(r => r.key_id && r.asset_name);
-
-            addLog(`Parsed ${rows.length} rows to process.`);
-
-            // 2. Pre-fetch Assets
-            const { AssetService } = await import("@/lib/services/AssetService");
-            const assetMap = new Map<string, { id: string }>();
-
-            // Get existing assets to avoid duplicates or to link
-            const existingAssets = await AssetService.getAssetsByOrg(profile.orgId);
-            existingAssets.forEach(a => {
-                if (a.name) assetMap.set(a.name.toLowerCase(), { id: a.id });
-            });
-
-            // 3. Process
-            let createdKeysCount = 0;
-            let createdAssetsCount = 0;
-
-            for (const row of rows) {
-                let assetId = "";
-
-                // Find or Create Parent Asset (The Lock/Door)
-                if (assetMap.has(row.asset_name.toLowerCase())) {
-                    const a = assetMap.get(row.asset_name.toLowerCase())!;
-                    assetId = a.id;
-                } else {
-                    // Create Asset
-                    addLog(`Creating new asset: ${row.asset_name}`);
-                    const newAsset = await AssetService.createAsset({
-                        orgId: profile.orgId,
-                        name: row.asset_name,
-                        area: row.location,
-                        type: AssetType.FACILITY,
-                        status: AssetStatus.AVAILABLE,
-                        totalKeys: row.quantity,
-                        metaData: {}
-                    });
-                    assetId = newAsset.id;
-                    assetMap.set(row.asset_name.toLowerCase(), { id: assetId });
-                    createdAssetsCount++;
-                }
-
-                // Create Keys
-                addLog(`Creating ${row.quantity} keys for ${row.key_id}...`);
-                for (let i = 0; i < row.quantity; i++) {
-                    await AssetService.createAsset({
-                        orgId: profile.orgId,
-                        name: row.key_id, // Use the Tag as the name
-                        type: AssetType.KEY,
-                        status: AssetStatus.AVAILABLE,
-                        area: row.location,
-                        metaData: {
-                            keyCode: row.key_id,
-                            assetId: assetId,
-                            location: row.location,
-                            loanType: "STANDARD",
-                        },
-                        qrCode: row.qr_code || undefined // Pass QR Code
-                    });
-                    createdKeysCount++;
-                }
+            if (importType === 'MEMBERS') {
+                await importMembers(lines);
+            } else {
+                await importAssets(lines, importType);
             }
 
-            addLog(`Successfully imported ${createdAssetsCount} Assets and ${createdKeysCount} Keys.`);
         } catch (err: any) {
             console.error(err);
             addLog(`Error: ${err.message}`);
@@ -135,7 +181,29 @@ export default function ImportPage() {
 
     return (
         <div className="mx-auto max-w-3xl p-6">
-            <h1 className="mb-4 text-2xl font-bold dark:text-white">Import Keys (CSV)</h1>
+            <h1 className="mb-4 text-2xl font-bold dark:text-white">Bulk Import</h1>
+
+            {/* Type Selector */}
+            <div className="mb-6 flex gap-4 border-b border-gray-200 dark:border-gray-700 pb-4">
+                <button
+                    onClick={() => setImportType('KEYS')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${importType === 'KEYS' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                >
+                    Keys
+                </button>
+                <button
+                    onClick={() => setImportType('ASSETS')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${importType === 'ASSETS' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                >
+                    Other Assets
+                </button>
+                <button
+                    onClick={() => setImportType('MEMBERS')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${importType === 'MEMBERS' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                >
+                    Team Members
+                </button>
+            </div>
 
             <div className="mb-6 flex justify-end">
                 <button
@@ -147,8 +215,13 @@ export default function ImportPage() {
                 </button>
             </div>
 
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Paste CSV content. Format: <code>Key ID, Name, Location, Quantity, [QR Code]</code>
+            <p className="mb-2 text-sm text-gray-600 dark:text-gray-400 font-bold">
+                Format for {importType}:
+            </p>
+            <p className="mb-4 text-xs font-mono text-gray-500">
+                {importType === 'KEYS' && "Key ID, Name, Location, Quantity, [QR Code]"}
+                {importType === 'ASSETS' && "Type (IT/VEHICLE), Name, Serial/ID, Location"}
+                {importType === 'MEMBERS' && "Email, Name, Role (ADMIN/MANAGER/WORKER)"}
             </p>
 
             <div className="mb-4">
@@ -156,7 +229,11 @@ export default function ImportPage() {
                     className="h-64 w-full rounded-lg border border-gray-300 p-4 font-mono text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     value={csvContent}
                     onChange={e => setCsvContent(e.target.value)}
-                    placeholder={`A1, Bedroom 1, 58 Victoria Road, 1, QR123456\nMAS, Master Key, 58 Victoria Road, 1, QR987654`}
+                    placeholder={
+                        importType === 'KEYS' ? `A1, Bedroom 1, 58 Victoria Road, 1, QR123456` :
+                            importType === 'ASSETS' ? `IT, MacBook Pro M1, SN1234, Office\nVEHICLE, Ford Transit, L666XYZ, Garage` :
+                                `alice@example.com, Alice Smith, MANAGER\nbob@example.com, Bob Jones, WORKER`
+                    }
                 />
             </div>
 
@@ -167,24 +244,6 @@ export default function ImportPage() {
             >
                 {importing ? "Importing..." : "Run Import"}
             </button>
-
-            <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50 p-6 dark:border-blue-900/30 dark:bg-blue-900/10">
-                <h3 className="mb-2 font-bold text-blue-900 dark:text-blue-100">How to Import Keys</h3>
-                <ul className="list-disc space-y-2 pl-5 text-sm text-blue-800 dark:text-blue-200">
-                    <li>
-                        <strong>Format:</strong> Data must be Comma Separated (CSV).
-                    </li>
-                    <li>
-                        <strong>Columns:</strong> <code>Key ID, Name, Location, Quantity, QR Code (Optional)</code>
-                    </li>
-                    <li>
-                        <strong>Example:</strong> <code>A1, Bedroom 1, 58 Victoria Road, 1, QR123456</code>
-                    </li>
-                    <li>
-                        This will create 1 Asset ("Bedroom 1") and 5 Keys (all with tag "A1") linked to it.
-                    </li>
-                </ul>
-            </div>
 
             <div className="mt-6 rounded-lg bg-gray-100 p-4 dark:bg-gray-900">
                 <h3 className="mb-2 font-bold text-gray-700 dark:text-gray-300">Logs</h3>
