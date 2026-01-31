@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  /* Light Mode - Crisp & Professional */
+  --background: #f8fafc; /* Slate 50 */
+  --foreground: #0f172a; /* Slate 900 */
+  
+  --primary: #4f46e5; /* Indigo 600 */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #e2e8f0; /* Slate 200 */
+  --secondary-foreground: #0f172a;
+  
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #4f46e5;
+  
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode - Premium & Deep */
+    --background: #020617; /* Slate 950 */
+    --foreground: #f8fafc; /* Slate 50 */
+    
+    --primary: #6366f1; /* Indigo 500 */
+    --primary-foreground: #ffffff;
+    
+    --secondary: #1e293b; /* Slate 800 */
+    --secondary-foreground: #f8fafc;
+    
+    --card: #0f172a; /* Slate 900 */
+    --card-foreground: #f8fafc;
+    
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #6366f1;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

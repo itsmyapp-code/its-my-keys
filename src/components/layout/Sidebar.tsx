@@ -12,14 +12,14 @@ import { Asset } from "@/types";
 
 const NAV_ITEMS = [
     { label: "Dashboard", href: "/" },
-    { label: "Assets", href: "/admin/assets" },
+    // { label: "Assets", href: "/admin/assets" }, // Hidden per request
     { label: "Add Key", href: "/admin/add-key" },
-    { label: "Audit Mode", href: "/admin/audit" },
+    { label: "Audit Mode", href: "/admin/audit", className: "hidden sm:flex" }, // Hidden on mobile
     { label: "Active Loans", href: "/admin/reports" },
     { label: "Import Keys", href: "/admin/import" },
     { label: "Team", href: "/admin/team" },
     { label: "Billing", href: "/admin/billing" },
-    { label: "Settings", href: "/admin/settings" },
+    // { label: "Settings", href: "/admin/settings" }, // Moved to Gear Icon
 ];
 
 interface SidebarProps {
@@ -108,62 +108,102 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <aside className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-gray-200 bg-white transition-transform dark:border-gray-700 dark:bg-gray-800 
                 ${isOpen ? "translate-x-0" : "-translate-x-full"} sm:translate-x-0`}
             >
-                <div className="h-full px-3 py-4 overflow-y-auto">
-                    <div className="mb-5 flex items-center justify-between pl-2.5">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src="/logo.jpg"
-                            alt="ItsMyKeys Logo"
-                            className="h-12 w-auto rounded-lg"
-                        />
-                        <button
-                            onClick={onClose}
-                            className="sm:hidden text-gray-500 hover:bg-gray-100 p-1 rounded-md"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
+                <div className="flex h-full flex-col">
+                    {/* Header Area with Logo and Gear Icon */}
+                    <div className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src="/logo.jpg"
+                                alt="ItsMyKeys Logo"
+                                className="h-10 w-auto rounded-lg"
+                            />
+                        </div>
+                        <div className="flex items-center gap-1">
+                            {/* Settings Gear Icon */}
+                            <Link
+                                href="/admin/settings"
+                                onClick={onClose}
+                                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                                title="Settings"
+                            >
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </Link>
+                            <button
+                                onClick={onClose}
+                                className="sm:hidden text-gray-500 hover:bg-gray-100 p-2 rounded-md"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Prominent Identify Action */}
-                    {/* Prominent Identify Action - Now opens Camera directly */}
-                    <div className="mb-4 px-2">
-                        <button
-                            onClick={() => {
-                                onClose();
-                                setIsScannerOpen(true);
-                            }}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg active:scale-95"
-                        >
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                            </svg>
-                            IDENTIFY ASSET
-                        </button>
+                    <div className="flex-1 overflow-y-auto px-3 py-2">
+                        {/* Prominent Identify Action */}
+                        <div className="mb-4">
+                            <button
+                                onClick={() => {
+                                    onClose();
+                                    setIsScannerOpen(true);
+                                }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg active:scale-95"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                </svg>
+                                IDENTIFY ASSET
+                            </button>
+                        </div>
+
+                        <ul className="space-y-2 font-medium">
+                            {NAV_ITEMS.map((item) => (
+                                <li key={item.href} className={item.className || ""}>
+                                    <Link
+                                        href={item.href}
+                                        onClick={() => onClose()} // Close on navigate (mobile)
+                                        className={`flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 ${pathname === item.href ? "bg-gray-100 dark:bg-gray-700" : ""
+                                            }`}
+                                    >
+                                        <span className="ml-3">{item.label}</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
 
-                    <ul className="space-y-2 font-medium">
-                        {NAV_ITEMS.map((item) => (
-                            <li key={item.href}>
+                    {/* Footer Area: User / Help */}
+                    <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+                        <ul className="space-y-2 font-medium">
+                            <li>
                                 <Link
-                                    href={item.href}
-                                    onClick={() => onClose()} // Close on navigate (mobile)
-                                    className={`flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 ${pathname === item.href ? "bg-gray-100 dark:bg-gray-700" : ""
-                                        }`}
+                                    href="/help"
+                                    onClick={onClose}
+                                    className="flex w-full items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
                                 >
-                                    <span className="ml-3">{item.label}</span>
+                                    <svg className="h-6 w-6 flex-shrink-0 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="ml-3">Help & Support</span>
                                 </Link>
                             </li>
-                        ))}
-                        <li>
-                            <button
-                                onClick={() => logout()}
-                                className="flex w-full items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
-                            >
-                                <span className="ml-3">Sign Out</span>
-                            </button>
-                        </li>
-                    </ul>
+                            <li>
+                                <button
+                                    onClick={() => logout()}
+                                    className="flex w-full items-center rounded-lg p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                >
+                                    <svg className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                    <span className="ml-3">Sign Out</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
+
             </aside>
 
             {/* Quick Setup Modal */}

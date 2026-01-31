@@ -66,22 +66,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 function LoginScreen() {
-    const { signInWithEmail, signUpWithEmail } = useAuth();
-    const [isLogin, setIsLogin] = useState(true);
+    const { signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
+    const [view, setView] = useState<'login' | 'signup' | 'reset'>('login');
     const [email, setEmail] = useState("");
     const [pass, setPass] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setSuccess("");
         setLoading(true);
         try {
-            if (isLogin) {
+            if (view === 'login') {
                 await signInWithEmail(email, pass);
-            } else {
+            } else if (view === 'signup') {
                 await signUpWithEmail(email, pass);
+            } else if (view === 'reset') {
+                await resetPassword(email);
+                setSuccess("Password reset email sent. Please check your inbox.");
             }
         } catch (err: any) {
             console.error(err);
@@ -89,6 +95,7 @@ function LoginScreen() {
             if (err.code === 'auth/invalid-credential') setError("Invalid email or password.");
             else if (err.code === 'auth/email-already-in-use') setError("Email already in use.");
             else if (err.code === 'auth/weak-password') setError("Password should be at least 6 chars.");
+            else if (err.code === 'auth/user-not-found') setError("No account found with this email.");
             else setError(err.message || "Failed to authenticate.");
         } finally {
             setLoading(false);
@@ -107,7 +114,9 @@ function LoginScreen() {
                     />
                 </div>
                 <h1 className="mb-6 text-center text-2xl font-bold dark:text-white">
-                    {isLogin ? "Welcome Back" : "Create Account"}
+                    {view === 'login' && "Welcome Back"}
+                    {view === 'signup' && "Create Account"}
+                    {view === 'reset' && "Reset Password"}
                 </h1>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -122,21 +131,58 @@ function LoginScreen() {
                             onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                        <input
-                            type="password"
-                            required
-                            className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                            placeholder="••••••••"
-                            value={pass}
-                            onChange={(e) => setPass(e.target.value)}
-                        />
-                    </div>
+
+                    {view !== 'reset' && (
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    required
+                                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                    placeholder="••••••••"
+                                    value={pass}
+                                    onChange={(e) => setPass(e.target.value)}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                >
+                                    {showPassword ? (
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                            {view === 'login' && (
+                                <div className="mt-1 text-right">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setView('reset'); setError(""); }}
+                                        className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {error && (
                         <div className="rounded bg-red-50 p-2 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-300">
                             {error}
+                        </div>
+                    )}
+                    {success && (
+                        <div className="rounded bg-green-50 p-2 text-sm text-green-600 dark:bg-green-900/30 dark:text-green-300">
+                            {success}
                         </div>
                     )}
 
@@ -145,17 +191,28 @@ function LoginScreen() {
                         disabled={loading}
                         className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700"
                     >
-                        {loading ? "Processing..." : (isLogin ? "Sign In" : "Sign Up")}
+                        {loading ? "Processing..." : (
+                            view === 'login' ? "Sign In" :
+                                view === 'signup' ? "Sign Up" :
+                                    "Send Reset Email"
+                        )}
                     </button>
                 </form>
 
                 <div className="mt-4 text-center text-sm">
                     <button
                         type="button"
-                        onClick={() => { setIsLogin(!isLogin); setError(""); }}
+                        onClick={() => {
+                            if (view === 'login') setView('signup');
+                            else setView('login');
+                            setError("");
+                            setSuccess("");
+                        }}
                         className="text-blue-600 hover:underline dark:text-blue-400"
                     >
-                        {isLogin ? "Need an account? Sign Up" : "Already have an account? Sign In"}
+                        {view === 'login' && "Need an account? Sign Up"}
+                        {view === 'signup' && "Already have an account? Sign In"}
+                        {view === 'reset' && "Back to Login"}
                     </button>
                 </div>
             </div>

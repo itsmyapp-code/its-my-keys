@@ -1,0 +1,263 @@
+"use client";
+
+import React, { useState } from "react";
+import { useInventory } from "@/contexts/InventoryContext";
+import { useAuth } from "@/contexts/AuthContext";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+import { KeyActionModal } from "@/components/dashboard/KeyActionModal";
+import { KeyItem } from "@/types";
+
+export default function ReportsPage() {
+    const { keys, loading } = useInventory();
+    const { profile } = useAuth();
+    const [generating, setGenerating] = useState(false);
+
+    // Modal State
+    const [selectedKey, setSelectedKey] = useState<KeyItem | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Filter active keys
+    const activeKeys = keys
+        .filter(k => k.status === "CHECKED_OUT" || k.status === "MISSING")
+        .sort((a, b) => {
+            if (a.status === "MISSING" && b.status !== "MISSING") return -1;
+            if (b.status === "MISSING" && a.status !== "MISSING") return 1;
+            const now = new Date().getTime();
+            const aDueDate = a.metaData?.dueDate?.toDate().getTime();
+            const bDueDate = b.metaData?.dueDate?.toDate().getTime();
+            const aOverdue = aDueDate && aDueDate < now;
+            const bOverdue = bDueDate && bDueDate < now;
+            if (aOverdue && !bOverdue) return -1;
+            if (!aOverdue && bOverdue) return 1;
+            return 0;
+        });
+
+    const generatePdf = () => {
+        setGenerating(true);
+        const doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.text("Active Loans & Missing Keys Report", 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleString("en-GB")}`, 14, 30);
+        doc.text(`Total Items: ${activeKeys.length}`, 14, 35);
+
+        const now = new Date();
+        const tableData = activeKeys.map(k => {
+            const meta = k.metaData || {};
+            const isMissing = k.status === "MISSING";
+            const isOverdue = !isMissing && meta.dueDate && meta.dueDate.toDate() < now;
+            const outSince = k.checkedOutAt || meta.checkedOutAt; // Consistent read
+
+            let statusLabel = (meta.loanType || "STANDARD").replace(/_/g, " ");
+            if (isMissing) statusLabel = "MISSING";
+            else if (isOverdue) statusLabel += " (OVERDUE)";
+
+            let dateInfo = meta.dueDate ? meta.dueDate.toDate().toLocaleDateString("en-GB") : "Indefinite";
+            if (isMissing && meta.missingSince) {
+                dateInfo = `Reported: ${meta.missingSince.toDate().toLocaleString("en-GB")}`;
+            }
+
+            return [
+                meta.keyCode || k.name,
+                k.name,
+                meta.currentHolder || "Unknown",
+                meta.holderCompany || "-",
+                outSince ? outSince.toDate().toLocaleString("en-GB") : "-",
+                dateInfo,
+                statusLabel
+            ];
+        });
+
+        autoTable(doc, {
+            startY: 40,
+            head: [['Key', 'Asset', 'Holder', 'Company', 'Out Since', 'Due / Missing', 'Status']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: { fillColor: [41, 128, 185] },
+            didParseCell: (data) => {
+                if (data.section === 'body') {
+                    const rowKeyId = activeKeys[data.row.index];
+                    const isMissing = rowKeyId.status === "MISSING";
+                    const isOverdue = !isMissing && rowKeyId.metaData?.dueDate && rowKeyId.metaData.dueDate.toDate() < now;
+                    if (isMissing) {
+                        data.cell.styles.textColor = [200, 0, 0];
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (isOverdue) {
+                        data.cell.styles.textColor = [200, 0, 0];
+                    }
+                }
+            }
+        });
+
+        const pdfBlob = doc.output("blob");
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `active-loans-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        setGenerating(false);
+    };
+
+    // Helper for timestamps
+    const formatDate = (ts: any) => {
+        if (!ts) return "-";
+        if (ts.toDate) return ts.toDate().toLocaleString("en-GB", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return "-";
+    };
+
+    const handleKeyClick = (key: KeyItem) => {
+        setSelectedKey(key);
+        setIsModalOpen(true);
+    };
+
+    return (
+        <div className="mx-auto max-w-6xl space-y-8 p-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold dark:text-white">Active Loans & Missing</h1>
+                <button
+                    onClick={generatePdf}
+                    disabled={generating || activeKeys.length === 0}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                    {generating ? "Generating..." : "Download PDF"}
+                </button>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+                        <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th className="px-6 py-3">Key</th>
+                                <th className="px-6 py-3">Asset</th>
+                                <th className="px-6 py-3">Holder</th>
+                                <th className="px-6 py-3">Company</th>
+                                <th className="px-6 py-3">Out Since</th>
+                                <th className="px-6 py-3">Due / Missing</th>
+                                <th className="px-6 py-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {activeKeys.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-10 text-center italic">
+                                        No keys currently checked out.
+                                    </td>
+                                </tr>
+                            ) : (
+                                activeKeys.map((key) => {
+                                    const meta = key.metaData || {};
+                                    const isMissing = key.status === "MISSING";
+                                    const isOverdue = !isMissing && meta.dueDate && meta.dueDate.toDate() < new Date();
+                                    const outSince = key.checkedOutAt || meta.checkedOutAt; // Check both
+
+                                    let rowClass = "bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-600 cursor-pointer";
+                                    if (isMissing) rowClass = "bg-red-50 dark:bg-red-900/20 hover:bg-red-100 cursor-pointer";
+                                    else if (isOverdue) rowClass = "bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 cursor-pointer";
+
+                                    return (
+                                        <tr key={key.id} className={`border-b dark:border-gray-700 ${rowClass}`} onClick={() => handleKeyClick(key)}>
+                                            <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
+                                                {meta.keyCode || key.name}
+                                            </td>
+                                            <td className="px-6 py-4">{key.name}</td>
+                                            <td className="px-6 py-4 font-medium">{meta.currentHolder || "Unknown"}</td>
+                                            <td className="px-6 py-4">{meta.holderCompany || "-"}</td>
+                                            <td className="px-6 py-4">{formatDate(outSince)}</td>
+                                            <td className={`px-6 py-4 ${isMissing || isOverdue ? "font-bold" : ""}`}>
+                                                {isMissing && meta.missingSince
+                                                    ? `Reported: ${formatDate(meta.missingSince)}`
+                                                    : meta.dueDate ? meta.dueDate.toDate().toLocaleDateString("en-GB") : "Indefinite"}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${isMissing ? "bg-red-100 text-red-800" :
+                                                    isOverdue ? "bg-orange-100 text-orange-800" :
+                                                        "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                                                    }`}>
+                                                    {isMissing ? "MISSING" : (meta.loanType || "STANDARD").replace(/_/g, " ")}
+                                                    {!isMissing && isOverdue && " (OVERDUE)"}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {activeKeys.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 italic bg-white rounded-lg border dark:bg-gray-800 dark:border-gray-700">
+                        No active loans.
+                    </div>
+                ) : (
+                    activeKeys.map(key => {
+                        const meta = key.metaData || {};
+                        const isMissing = key.status === "MISSING";
+                        const isOverdue = !isMissing && meta.dueDate && meta.dueDate.toDate() < new Date();
+                        const outSince = key.checkedOutAt || meta.checkedOutAt;
+
+                        return (
+                            <div
+                                key={key.id}
+                                onClick={() => handleKeyClick(key)}
+                                className={`p-4 rounded-lg border shadow-sm space-y-3 ${isMissing ? "bg-red-50 border-red-200 dark:bg-red-900/20" :
+                                    isOverdue ? "bg-orange-50 border-orange-200 dark:bg-orange-900/20" :
+                                        "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+                                    }`}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{meta.keyCode || key.name}</h3>
+                                        <p className="text-sm text-gray-500">{key.name}</p>
+                                    </div>
+                                    <span className={`px-2 py-1 text-[10px] font-bold rounded-full uppercase ${isMissing ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+                                        }`}>
+                                        {isMissing ? "MISSING" : "OUT"}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                        <span className="text-xs text-gray-400 block">Holder</span>
+                                        <span className="font-medium text-gray-800 dark:text-gray-200">{meta.currentHolder || "Unknown"}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs text-gray-400 block">Out Since</span>
+                                        <span className="text-gray-800 dark:text-gray-200">{formatDate(outSince)}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs text-gray-400 block">{isMissing ? "Reported" : "Due"}</span>
+                                        <span className={`font-medium ${isOverdue ? "text-red-600" : "text-gray-800 dark:text-gray-200"}`}>
+                                            {isMissing && meta.missingSince
+                                                ? formatDate(meta.missingSince)
+                                                : meta.dueDate ? meta.dueDate.toDate().toLocaleDateString("en-GB") : "Indefinite"}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* Modal */}
+            <KeyActionModal
+                keyItem={selectedKey}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                orgId={keys[0]?.orgId || ""}
+            />
+        </div>
+    );
+}
