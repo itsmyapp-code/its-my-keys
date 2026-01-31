@@ -164,54 +164,53 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         </li>
                     </ul>
                 </div>
-            </div>
-        </aside >
+            </aside>
 
-            {/* Quick Setup Modal */ }
-    {
-        selectedAsset && isQuickSetupOpen && (
-            <QuickSetupModal
-                asset={selectedAsset}
-                isOpen={isQuickSetupOpen}
-                onClose={() => {
-                    setIsQuickSetupOpen(false);
-                    setSelectedAsset(null);
-                }}
-                onSuccess={() => {
-                    setIsQuickSetupOpen(false);
-                    setSelectedAsset(null);
-                    // Optional: Open standard modal after setup? 
-                    // For now, just close and let them scan again or find it in list to checkout.
-                    alert("Setup Complete! You can now check this key out.");
-                }}
-            />
-        )
-    }
+            {/* Quick Setup Modal */}
+            {
+                selectedAsset && isQuickSetupOpen && (
+                    <QuickSetupModal
+                        asset={selectedAsset}
+                        isOpen={isQuickSetupOpen}
+                        onClose={() => {
+                            setIsQuickSetupOpen(false);
+                            setSelectedAsset(null);
+                        }}
+                        onSuccess={() => {
+                            setIsQuickSetupOpen(false);
+                            setSelectedAsset(null);
+                            // Optional: Open standard modal after setup? 
+                            // For now, just close and let them scan again or find it in list to checkout.
+                            alert("Setup Complete! You can now check this key out.");
+                        }}
+                    />
+                )
+            }
 
-    {/* Global Scanner & Action Modal embedded in Sidebar for access from anywhere */ }
-    {
-        isScannerOpen && (
-            <QRScannerModal
-                isOpen={isScannerOpen}
-                onClose={() => setIsScannerOpen(false)}
-                onScan={handleScan}
-            />
-        )
-    }
+            {/* Global Scanner & Action Modal embedded in Sidebar for access from anywhere */}
+            {
+                isScannerOpen && (
+                    <QRScannerModal
+                        isOpen={isScannerOpen}
+                        onClose={() => setIsScannerOpen(false)}
+                        onScan={handleScan}
+                    />
+                )
+            }
 
-    {
-        selectedAsset && (
-            <KeyActionModal
-                keyItem={selectedAsset}
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setSelectedAsset(null);
-                }}
-                orgId={profile?.orgId || ""}
-            />
-        )
-    }
+            {
+                selectedAsset && (
+                    <KeyActionModal
+                        keyItem={selectedAsset}
+                        isOpen={isModalOpen}
+                        onClose={() => {
+                            setIsModalOpen(false);
+                            setSelectedAsset(null);
+                        }}
+                        orgId={profile?.orgId || ""}
+                    />
+                )
+            }
         </>
     );
 }
