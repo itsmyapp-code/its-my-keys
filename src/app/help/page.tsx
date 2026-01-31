@@ -62,7 +62,7 @@ export default function HelpPage() {
                     <div className="space-y-3 text-gray-600 dark:text-gray-300">
                         <p><strong>Scanner not working?</strong> Ensure you have granted camera permissions to the browser.</p>
                         <p><strong>Forgot Password?</strong> Use the "Forgot Password?" link on the login screen to reset it.</p>
-                        <p><strong>Need more help?</strong> Contact support at <a href="mailto:support@itsmykeys.co.uk" className="text-blue-600 hover:underline">support@itsmykeys.co.uk</a>.</p>
+                        <p><strong>Need more help?</strong> Contact support at <a href="mailto:support@itsmyapp.co.uk" className="text-blue-600 hover:underline">support@itsmyapp.co.uk</a>.</p>
                     </div>
                 </section>
             </div>

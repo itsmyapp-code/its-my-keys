@@ -54,12 +54,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                 <p className="text-xs">Your account is limited to 30 keys. Enjoy the concierge onboarding!</p>
                             </div>
                         </div>
-                        <a href="mailto:support@itsmykeys.co.uk" className="text-xs font-semibold underline hover:text-indigo-900 dark:hover:text-indigo-200">
+                        <a href="mailto:support@itsmyapp.co.uk" className="text-xs font-semibold underline hover:text-indigo-900 dark:hover:text-indigo-200">
                             Give Feedback
                         </a>
                     </div>
                 )}
                 {children}
+
+                {/* Authenticated Footer */}
+                <footer className="mt-12 border-t border-gray-200 py-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center gap-2">
+                            <span>Produced by </span>
+                            <a href="https://itsmyapp.co.uk" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                                itsmyapp.co.uk
+                            </a>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/itsmyapp_logo.png" alt="ItsMyApp Logo" className="h-6 w-auto" />
+                        </div>
+                        <p>&copy; 2026 Its My Keys. All rights reserved.</p>
+                        <p>
+                            Need more help? Contact support at <a href="mailto:support@itsmyapp.co.uk" className="text-blue-600 hover:underline">support@itsmyapp.co.uk</a>.
+                        </p>
+                    </div>
+                </footer>
             </div>
         </div>
     );
@@ -214,6 +232,24 @@ function LoginScreen() {
                         {view === 'signup' && "Already have an account? Sign In"}
                         {view === 'reset' && "Back to Login"}
                     </button>
+                </div>
+
+                {/* Login Screen Footer */}
+                <div className="mt-8 border-t border-gray-100 pt-6 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="flex items-center gap-2">
+                            <span>Produced by </span>
+                            <a href="https://itsmyapp.co.uk" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                                itsmyapp.co.uk
+                            </a>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/itsmyapp_logo.png" alt="ItsMyApp Logo" className="h-5 w-auto" />
+                        </div>
+                        <p>&copy; 2026 Its My Keys</p>
+                        <p>
+                            Contact: <a href="mailto:support@itsmyapp.co.uk" className="hover:underline">support@itsmyapp.co.uk</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
