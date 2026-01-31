@@ -24,6 +24,9 @@ export const viewport: Viewport = {
 };
 
 import { AppLayout } from "@/components/layout/AppLayout";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
+import { CookieBanner } from "@/components/common/CookieBanner";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 
 export default function RootLayout({
   children,
@@ -36,9 +39,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <AppLayout>
-            {children}
-          </AppLayout>
+          <CookieConsentProvider>
+            <AppLayout>
+              {children}
+            </AppLayout>
+            <CookieBanner />
+            {/* Example usage - only loads if consent granted. Replace empty string with real ID when available */}
+            <GoogleAnalytics gaId="" />
+          </CookieConsentProvider>
         </Providers>
       </body>
     </html>
