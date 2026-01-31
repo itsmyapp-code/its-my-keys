@@ -2,12 +2,14 @@
 
 import React, { useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInventory } from "@/contexts/InventoryContext";
 import { AssetService } from "@/lib/services/AssetService";
 import { AssetType, AssetStatus } from "@/types";
 import { QRScannerModal } from "@/components/common/QRScannerModal";
 
 export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
-    const { profile } = useAuth();
+    const { profile, organization } = useAuth();
+    const { assets } = useInventory();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +29,14 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
         if (!profile?.orgId) {
             setError("User organization not found.");
             return;
+        }
+
+        // Pilot Constraint Check
+        if (organization?.accountType === 'TRIAL_PILOT') {
+            if (assets.length >= 30) {
+                setError("Trial Limit Reached. You are limited to 30 keys during the pilot phase. Contact support to upgrade.");
+                return;
+            }
         }
 
         setLoading(true);

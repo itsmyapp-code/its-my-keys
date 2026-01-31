@@ -22,6 +22,7 @@ export interface Organization {
     id: string;
     name: string;
     subscriptionStatus: 'ACTIVE' | 'TRIAL' | 'PAST_DUE' | 'CANCELLED';
+    accountType?: 'TRIAL_PILOT' | 'STANDARD';
     createdAt: Timestamp;
 }
 
@@ -41,6 +42,7 @@ export interface UserProfile {
     orgId: string;
     role: Role;
     photoURL?: string;
+    joinedAt?: Timestamp;
 }
 
 export interface Asset {
@@ -53,6 +55,7 @@ export interface Asset {
     status: AssetStatus;
     metaData: Record<string, any>; // Polymorphic fields
     qrCode?: string;
+    isSetupComplete?: boolean; // For concierge onboarding flow
     searchKeywords: string[]; // For filtering
     checkedOutAt?: Timestamp; // For top-level access in reports
     createdAt: Timestamp;

@@ -7,6 +7,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useInventory } from "@/contexts/InventoryContext"; // Allow looking up assets
 import { QRScannerModal } from "@/components/common/QRScannerModal";
 import { KeyActionModal } from "@/components/dashboard/KeyActionModal";
+import { QuickSetupModal } from "@/components/dashboard/QuickSetupModal";
 import { Asset } from "@/types";
 
 const NAV_ITEMS = [
@@ -53,6 +54,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+    const [isQuickSetupOpen, setIsQuickSetupOpen] = useState(false); // New state
 
     const handleScan = (code: string, silent: boolean = false) => {
         setIsScannerOpen(false);
@@ -67,7 +69,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         if (exactMatch) {
             setSelectedAsset(exactMatch);
-            setIsModalOpen(true);
+            // CHECK FOR PILOT SETUP
+            if (exactMatch.isSetupComplete === false) {
+                setIsQuickSetupOpen(true);
+            } else {
+                setIsModalOpen(true);
+            }
         } else {
             if (!silent) {
                 // Fallback: If not found, maybe redirect to assets page with search?
@@ -157,32 +164,54 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         </li>
                     </ul>
                 </div>
-            </aside >
+            </div>
+        </aside >
 
-            {/* Global Scanner & Action Modal embedded in Sidebar for access from anywhere */}
-            {
-                isScannerOpen && (
-                    <QRScannerModal
-                        isOpen={isScannerOpen}
-                        onClose={() => setIsScannerOpen(false)}
-                        onScan={handleScan}
-                    />
-                )
-            }
+            {/* Quick Setup Modal */ }
+    {
+        selectedAsset && isQuickSetupOpen && (
+            <QuickSetupModal
+                asset={selectedAsset}
+                isOpen={isQuickSetupOpen}
+                onClose={() => {
+                    setIsQuickSetupOpen(false);
+                    setSelectedAsset(null);
+                }}
+                onSuccess={() => {
+                    setIsQuickSetupOpen(false);
+                    setSelectedAsset(null);
+                    // Optional: Open standard modal after setup? 
+                    // For now, just close and let them scan again or find it in list to checkout.
+                    alert("Setup Complete! You can now check this key out.");
+                }}
+            />
+        )
+    }
 
-            {
-                selectedAsset && (
-                    <KeyActionModal
-                        keyItem={selectedAsset}
-                        isOpen={isModalOpen}
-                        onClose={() => {
-                            setIsModalOpen(false);
-                            setSelectedAsset(null);
-                        }}
-                        orgId={profile?.orgId || ""}
-                    />
-                )
-            }
+    {/* Global Scanner & Action Modal embedded in Sidebar for access from anywhere */ }
+    {
+        isScannerOpen && (
+            <QRScannerModal
+                isOpen={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleScan}
+            />
+        )
+    }
+
+    {
+        selectedAsset && (
+            <KeyActionModal
+                keyItem={selectedAsset}
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setSelectedAsset(null);
+                }}
+                orgId={profile?.orgId || ""}
+            />
+        )
+    }
         </>
     );
 }

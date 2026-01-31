@@ -5,7 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth();
+    const { user, loading, organization } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     if (loading) {
@@ -44,6 +44,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
             <div className="p-4 sm:ml-64">
+                {/* Pilot Banner */}
+                {organization?.accountType === 'TRIAL_PILOT' && (
+                    <div className="mb-4 rounded-lg bg-indigo-50 p-4 text-indigo-800 border border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-800 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">🚀</span>
+                            <div>
+                                <h3 className="font-bold text-sm">Pilot Mode Active</h3>
+                                <p className="text-xs">Your account is limited to 30 keys. Enjoy the concierge onboarding!</p>
+                            </div>
+                        </div>
+                        <a href="mailto:support@itsmykeys.co.uk" className="text-xs font-semibold underline hover:text-indigo-900 dark:hover:text-indigo-200">
+                            Give Feedback
+                        </a>
+                    </div>
+                )}
                 {children}
             </div>
         </div>
