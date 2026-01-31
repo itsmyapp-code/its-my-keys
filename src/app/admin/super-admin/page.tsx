@@ -142,6 +142,51 @@ const SuperAdminPage = () => {
         }
     };
 
+    const handleExportData = async () => {
+        if (!profile?.orgId) return;
+        setAuditMsg("Exporting data...");
+        try {
+            // 1. Fetch Assets
+            const assetsQ = query(collection(db, "assets"), where("orgId", "==", profile.orgId));
+            const assetsSnap = await getDocs(assetsQ);
+            const assets = assetsSnap.docs.map(d => d.data());
+
+            // 2. Fetch Logs (Optional, but useful for full backup)
+            const logsQ = query(collection(db, "logs"), where("orgId", "==", profile.orgId));
+            const logsSnap = await getDocs(logsQ);
+            const logs = logsSnap.docs.map(d => d.data());
+
+            // 3. Construct JSON
+            const exportData = {
+                exportedAt: new Date().toISOString(),
+                org_id: profile.orgId,
+                stats: {
+                    asset_count: assets.length,
+                    log_count: logs.length
+                },
+                assets,
+                logs
+            };
+
+            // 4. Download File
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `itsmykeys-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            setAuditMsg(`Export complete! ${assets.length} assets, ${logs.length} logs.`);
+
+        } catch (err: any) {
+            console.error(err);
+            setAuditMsg("Export failed: " + err.message);
+        }
+    };
+
     if (loading) return <div className="p-8">Loading super admin tools...</div>;
 
     return (
@@ -219,44 +264,61 @@ const SuperAdminPage = () => {
                 </form>
             </div>
 
-            {/* Maintenance Zone */}
-            <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm dark:border-red-900/30 dark:bg-red-900/10">
-                <h2 className="mb-2 text-lg font-semibold text-red-700 dark:text-red-400">Maintenance Zone</h2>
-                <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100 dark:bg-gray-800 dark:border-gray-700">
-                        <div>
-                            <h4 className="font-medium text-gray-900 dark:text-white">Migrate Key Parents</h4>
-                            <p className="text-xs text-gray-500">Converts "Rental" items that hold keys into "Facilities". Fixes "Keys appearing as Rentals" issue.</p>
-                        </div>
+            {/* Maintenance & Data Zone */}
+            <div className="grid gap-6">
+                {/* Data Export */}
+                <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <h2 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Data Export</h2>
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-500">Download a full JSON backup of all Assets and Logs.</p>
                         <button
-                            onClick={handleMigrateParents}
-                            disabled={maintenanceLoading}
-                            className="px-3 py-1.5 text-xs font-bold bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            onClick={handleExportData}
+                            className="px-4 py-2 text-sm font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
                         >
-                            {maintenanceLoading ? "Scanning..." : "Run Migration"}
+                            Export JSON
                         </button>
                     </div>
+                </div>
 
-                    {/* Delete All Data */}
-                    <div className="flex items-center justify-between p-3 bg-red-100 rounded-lg border border-red-200 dark:bg-red-900/40 dark:border-red-800">
-                        <div>
-                            <h4 className="font-bold text-red-800 dark:text-red-300">Reset Data</h4>
-                            <p className="text-xs text-red-700 dark:text-red-400">Permanently delete ALL assets and keys. Start fresh.</p>
+                {/* Maintenance Zone */}
+                <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm dark:border-red-900/30 dark:bg-red-900/10">
+                    <h2 className="mb-2 text-lg font-semibold text-red-700 dark:text-red-400">Maintenance Zone</h2>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-100 dark:bg-gray-800 dark:border-gray-700">
+                            <div>
+                                <h4 className="font-medium text-gray-900 dark:text-white">Migrate Key Parents</h4>
+                                <p className="text-xs text-gray-500">Converts "Rental" items that hold keys into "Facilities". Fixes "Keys appearing as Rentals" issue.</p>
+                            </div>
+                            <button
+                                onClick={handleMigrateParents}
+                                disabled={maintenanceLoading}
+                                className="px-3 py-1.5 text-xs font-bold bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            >
+                                {maintenanceLoading ? "Scanning..." : "Run Migration"}
+                            </button>
                         </div>
-                        <button
-                            onClick={handleDeleteAllAssets}
-                            disabled={deleteAllLoading}
-                            className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 border border-red-700 rounded shadow-sm hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500"
-                        >
-                            {deleteAllLoading ? "Deleting..." : "DELETE ALL DATA"}
-                        </button>
+
+                        {/* Delete All Data */}
+                        <div className="flex items-center justify-between p-3 bg-red-100 rounded-lg border border-red-200 dark:bg-red-900/40 dark:border-red-800">
+                            <div>
+                                <h4 className="font-bold text-red-800 dark:text-red-300">Reset Data</h4>
+                                <p className="text-xs text-red-700 dark:text-red-400">Permanently delete ALL assets and keys. Start fresh.</p>
+                            </div>
+                            <button
+                                onClick={handleDeleteAllAssets}
+                                disabled={deleteAllLoading}
+                                className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 border border-red-700 rounded shadow-sm hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500"
+                            >
+                                {deleteAllLoading ? "Deleting..." : "DELETE ALL DATA"}
+                            </button>
+                        </div>
+
+                        {auditMsg && (
+                            <div className="text-xs font-mono p-2 bg-gray-100 rounded dark:bg-gray-800 dark:text-gray-300">
+                                {auditMsg}
+                            </div>
+                        )}
                     </div>
-
-                    {auditMsg && (
-                        <div className="text-xs font-mono p-2 bg-gray-100 rounded dark:bg-gray-800 dark:text-gray-300">
-                            {auditMsg}
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
