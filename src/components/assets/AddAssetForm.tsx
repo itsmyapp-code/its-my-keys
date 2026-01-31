@@ -22,6 +22,12 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
     const [metadata, setMetadata] = useState<Record<string, any>>({});
     const [isScannerOpen, setIsScannerOpen] = useState(false);
 
+    // Key Specific State
+    const [keyType, setKeyType] = useState("EURO_LOCK");
+    const [notes, setNotes] = useState("");
+    const [isMasterSystem, setIsMasterSystem] = useState(false);
+    const [keySupplier, setKeySupplier] = useState("");
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -49,12 +55,26 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
                 status: AssetStatus.AVAILABLE, // Default
                 qrCode: qrCode || undefined,
                 metaData: metadata,
+                // New Fields
+                keyType: type === AssetType.KEY ? keyType as any : undefined,
+                notes: notes || undefined,
+                isMasterSystem: type === AssetType.KEY ? isMasterSystem : undefined,
+                keySupplier: (type === AssetType.KEY && isMasterSystem) ? keySupplier : undefined
             });
 
             // Reset Form
             setName("");
             setQrCode("");
+            setQrCode("");
             setMetadata({});
+            // Reset New Fields
+            setNotes("");
+            setIsMasterSystem(false);
+            setKeySupplier("");
+            if (onSuccess) onSuccess();
+            setNotes("");
+            setIsMasterSystem(false);
+            setKeySupplier("");
             if (onSuccess) onSuccess();
         } catch (err: any) {
             console.error(err);

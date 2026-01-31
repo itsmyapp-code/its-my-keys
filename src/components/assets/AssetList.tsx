@@ -275,6 +275,29 @@ function AssetCard({ asset, onAction }: { asset: Asset; onAction: () => void }) 
                         <span className="font-semibold">Holder:</span> {meta.currentHolder || "Unknown"}
                     </div>
                 )}
+
+                {/* Key Specific Extended Details */}
+                {asset.type === AssetType.KEY && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                        {asset.keyType && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                {asset.keyType.replace('_', ' ')}
+                            </span>
+                        )}
+                        {asset.isMasterSystem && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800" title={`Supplier: ${asset.keySupplier || 'Unknown'}`}>
+                                Master System {asset.keySupplier ? `(${asset.keySupplier})` : ''}
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                {/* Notes (Collapsed/Truncated) */}
+                {asset.notes && (
+                    <div className="mt-2 text-xs text-gray-500 italic truncate" title={asset.notes}>
+                        "{asset.notes}"
+                    </div>
+                )}
             </div>
 
             {/* Action Button */}

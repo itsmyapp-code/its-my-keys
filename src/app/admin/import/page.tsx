@@ -79,8 +79,8 @@ export default function ImportPage() {
 
         for (const line of lines) {
             if (type === 'KEYS') {
-                // Key Format: Key ID, Name, Location, Quantity, [QR Code]
-                const [key_id, asset_name, location, qtyStr, qr_code] = line.split(",").map(c => c.trim());
+                // Key Format: Key ID, Name, Location, Quantity, [QR Code], [Key Type], [Notes], [Master System], [Supplier]
+                const [key_id, asset_name, location, qtyStr, qr_code, key_type, notes, master_system, supplier] = line.split(",").map(c => c.trim());
                 if (!key_id || !asset_name) continue;
 
                 const quantity = parseInt(qtyStr) || 1;
@@ -105,6 +105,8 @@ export default function ImportPage() {
                 }
 
                 addLog(`Creating ${quantity} keys for tag ${key_id}...`);
+                const isMaster = master_system?.toLowerCase() === 'yes' || master_system?.toLowerCase() === 'true';
+
                 for (let i = 0; i < quantity; i++) {
                     await AssetService.createAsset({
                         orgId: profile!.orgId,
@@ -118,7 +120,14 @@ export default function ImportPage() {
                             location: location,
                             loanType: "STANDARD",
                         },
-                        qrCode: qr_code || undefined
+                        qrCode: qr_code || undefined,
+                        // New Fields
+                        keyType: (key_type && ['EURO_LOCK', 'CYLINDER', 'PADLOCK', 'ELECTRONIC', 'OTHER'].includes(key_type.toUpperCase()))
+                            ? key_type.toUpperCase() as any
+                            : 'EURO_LOCK',
+                        notes: notes || undefined,
+                        isMasterSystem: isMaster,
+                        keySupplier: (isMaster && supplier) ? supplier : undefined
                     });
                     createdCount++;
                 }
@@ -219,7 +228,7 @@ export default function ImportPage() {
                 Format for {importType}:
             </p>
             <p className="mb-4 text-xs font-mono text-gray-500">
-                {importType === 'KEYS' && "Key ID, Name, Location, Quantity, [QR Code]"}
+                {importType === 'KEYS' && "Key ID, Name, Location, Quantity, [QR], [Type], [Notes], [Master(Y/N)], [Supplier]"}
                 {importType === 'ASSETS' && "Type (IT/VEHICLE), Name, Serial/ID, Location"}
                 {importType === 'MEMBERS' && "Email, Name, Role (ADMIN/MANAGER/WORKER)"}
             </p>
@@ -230,7 +239,7 @@ export default function ImportPage() {
                     value={csvContent}
                     onChange={e => setCsvContent(e.target.value)}
                     placeholder={
-                        importType === 'KEYS' ? `A1, Bedroom 1, 58 Victoria Road, 1, QR123456` :
+                        importType === 'KEYS' ? `A1, Bedroom 1, 58 Victoria Road, 1, QR123, EURO_LOCK, Spare key, Yes, Timpson` :
                             importType === 'ASSETS' ? `IT, MacBook Pro M1, SN1234, Office\nVEHICLE, Ford Transit, L666XYZ, Garage` :
                                 `alice@example.com, Alice Smith, MANAGER\nbob@example.com, Bob Jones, WORKER`
                     }

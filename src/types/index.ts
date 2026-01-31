@@ -58,6 +58,13 @@ export interface Asset {
     isSetupComplete?: boolean; // For concierge onboarding flow
     searchKeywords: string[]; // For filtering
     checkedOutAt?: Timestamp; // For top-level access in reports
+
+    // Key Details Enhancement
+    keyType?: 'EURO_LOCK' | 'CYLINDER' | 'PADLOCK' | 'ELECTRONIC' | 'OTHER';
+    notes?: string;
+    isMasterSystem?: boolean;
+    keySupplier?: string;
+
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }

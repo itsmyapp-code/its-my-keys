@@ -27,11 +27,21 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
     // Edit State
     const [editName, setEditName] = useState(asset.name);
     const [editMeta, setEditMeta] = useState<Record<string, any>>(asset.metaData || {});
+    // New Edit Fields
+    const [editKeyType, setEditKeyType] = useState(asset.keyType || "EURO_LOCK");
+    const [editNotes, setEditNotes] = useState(asset.notes || "");
+    const [editIsMaster, setEditIsMaster] = useState(asset.isMasterSystem || false);
+    const [editSupplier, setEditSupplier] = useState(asset.keySupplier || "");
 
     // Sync state when asset changes
     React.useEffect(() => {
         setEditName(asset.name);
+        setEditName(asset.name);
         setEditMeta(asset.metaData || {});
+        setEditKeyType(asset.keyType || "EURO_LOCK");
+        setEditNotes(asset.notes || "");
+        setEditIsMaster(asset.isMasterSystem || false);
+        setEditSupplier(asset.keySupplier || "");
         setMode('ACTION');
         setError(null);
         setDueDate(""); // Reset due date
@@ -80,7 +90,11 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
         try {
             await AssetService.updateAsset(asset.id, {
                 name: editName,
-                metaData: editMeta
+                metaData: editMeta,
+                keyType: asset.type === 'KEY' ? editKeyType as any : undefined,
+                notes: editNotes,
+                isMasterSystem: asset.type === 'KEY' ? editIsMaster : undefined,
+                keySupplier: (asset.type === 'KEY' && editIsMaster) ? editSupplier : undefined
             });
             onSuccess();
             onClose();
@@ -139,6 +153,58 @@ export function AssetActionModal({ asset, isOpen, onClose, onSuccess }: Props) {
                             </div>
 
                             {/* Dynamic Fields based on Type */}
+                            {asset.type === 'KEY' && (
+                                <div className="space-y-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-100 dark:border-gray-700">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-foreground">Key Type</label>
+                                        <select
+                                            value={editKeyType}
+                                            onChange={(e) => setEditKeyType(e.target.value as any)}
+                                            className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                        >
+                                            <option value="EURO_LOCK">Euro Lock</option>
+                                            <option value="CYLINDER">Cylinder</option>
+                                            <option value="PADLOCK">Padlock</option>
+                                            <option value="ELECTRONIC">Electronic / Fob</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={editIsMaster}
+                                            onChange={(e) => setEditIsMaster(e.target.checked)}
+                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm font-medium text-foreground">Part of Master Key System</span>
+                                    </div>
+
+                                    {editIsMaster && (
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-foreground">Supplier / Manufacturer</label>
+                                            <input
+                                                type="text"
+                                                value={editSupplier}
+                                                onChange={(e) => setEditSupplier(e.target.value)}
+                                                className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none"
+                                                placeholder="e.g. Timpson"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Generic Notes */}
+                            <div>
+                                <label className="block text-sm font-medium text-foreground mb-1">Notes</label>
+                                <textarea
+                                    value={editNotes}
+                                    onChange={e => setEditNotes(e.target.value)}
+                                    className="w-full p-2 rounded-md bg-input border border-border focus:ring-2 focus:ring-ring outline-none h-20 resize-none"
+                                />
+                            </div>
+
                             {asset.type === 'VEHICLE' && (
                                 <>
                                     <div>
