@@ -176,6 +176,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                     {/* Footer Area: User / Help */}
                     <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+                        {/* User Profile Info */}
+                        <div className="mb-4 flex items-center gap-3 px-2">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                <span className="text-lg font-bold">
+                                    {(profile?.displayName?.[0] || user?.email?.[0] || "?").toUpperCase()}
+                                </span>
+                            </div>
+                            <div className="flex flex-col overflow-hidden">
+                                <span className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                                    {profile?.displayName || "User"}
+                                </span>
+                                <span className="truncate text-xs text-gray-500 dark:text-gray-400">
+                                    {user?.email}
+                                </span>
+                            </div>
+                        </div>
+
                         <ul className="space-y-2 font-medium">
                             <li>
                                 <Link

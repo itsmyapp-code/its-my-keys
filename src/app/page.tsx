@@ -291,10 +291,19 @@ export default function Dashboard() {
         </section>
       )}
 
-      {Object.values(grouped).every(g => g.length === 0) && !keyGroups.length && (
+      {Object.values(grouped).every(g => g.length === 0) && !keyGroups.length ? (
         <div className="col-span-full py-10 text-center text-gray-500 dark:text-gray-400">
           <p>No assets found matched your preferences or search.</p>
         </div>
+      ) : (
+        /* Check if everything is hidden by settings but assets exist */
+        !visibility.keys && !visibility.itDevices && !visibility.vehicles && !visibility.rentals && (
+          <div className="col-span-full py-10 text-center text-gray-500 dark:text-gray-400">
+            <p className="mb-2 text-lg font-semibold">Dashboard Sections Hidden</p>
+            <p className="text-sm">Assets exist, but all categories are currently hidden in settings.</p>
+            <p className="text-sm mt-2">Go to <a href="/admin/super-admin" className="text-blue-600 underline">Super Admin</a> to change visibility.</p>
+          </div>
+        )
       )}
 
       {/* Transaction Modal */}
