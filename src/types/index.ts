@@ -41,7 +41,7 @@ export interface UserProfile {
     displayName: string;
     orgId: string;
     role: Role;
-    photoURL?: string;
+    photoURL?: string | null;
     joinedAt?: Timestamp;
 }
 

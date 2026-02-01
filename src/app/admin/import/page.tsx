@@ -12,34 +12,11 @@ export default function ImportPage() {
     const [csvContent, setCsvContent] = useState("");
     const [importing, setImporting] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
-    const [isClearing, setIsClearing] = useState(false);
 
     // New state for Import Type
     const [importType, setImportType] = useState<'KEYS' | 'ASSETS' | 'MEMBERS'>('KEYS');
 
     const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
-
-    const handleClearDatabase = async () => {
-        if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.includes("demo") &&
-            !confirm("DANGER: This will delete ALL keys and assets for your organization. This cannot be undone. Are you sure?")) {
-            return;
-        }
-
-        if (!profile?.orgId) return;
-
-        setIsClearing(true);
-        try {
-            const { AssetService } = await import("@/lib/services/AssetService");
-            await AssetService.deleteAllAssets(profile.orgId);
-            addLog("Database cleared successfully.");
-            alert("All assets have been deleted.");
-        } catch (err: any) {
-            console.error(err);
-            addLog(`Error clearing database: ${err.message}`);
-        } finally {
-            setIsClearing(false);
-        }
-    };
 
     const importMembers = async (lines: string[]) => {
         // Format: Email, Name, Role
@@ -214,16 +191,6 @@ export default function ImportPage() {
                 </button>
             </div>
 
-            <div className="mb-6 flex justify-end">
-                <button
-                    onClick={handleClearDatabase}
-                    disabled={isClearing || importing}
-                    className="text-sm text-red-600 hover:text-red-800 underline disabled:opacity-50"
-                >
-                    {isClearing ? "Clearing..." : "Clear All Data (Reset)"}
-                </button>
-            </div>
-
             <p className="mb-2 text-sm text-gray-600 dark:text-gray-400 font-bold">
                 Format for {importType}:
             </p>
@@ -248,7 +215,7 @@ export default function ImportPage() {
 
             <button
                 onClick={handleImport}
-                disabled={importing || isClearing}
+                disabled={importing}
                 className="rounded-lg bg-blue-600 px-6 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
                 {importing ? "Importing..." : "Run Import"}

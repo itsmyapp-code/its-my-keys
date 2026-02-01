@@ -68,7 +68,8 @@ export default function Dashboard() {
         if (snap.exists()) {
           const data = snap.data();
           if (data.settings?.dashboardVisibility) {
-            setVisibility(data.settings.dashboardVisibility);
+            // Merge with defaults to ensure missing keys don't hide everything
+            setVisibility(prev => ({ ...prev, ...data.settings.dashboardVisibility }));
           }
         }
       } catch (err) {

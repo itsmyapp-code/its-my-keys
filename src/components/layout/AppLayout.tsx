@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import { Sidebar } from "./Sidebar";
+import { ProfileSetup } from "@/components/auth/ProfileSetup";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading, organization } = useAuth();
+    const { user, profile, loading, organization } = useAuth();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     if (loading) {
@@ -20,6 +21,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         // Basic Login Screen if not authenticated
         // In a real app, we'd redirect to /login page
         return <LoginScreen />;
+    }
+
+    if (!loading && !profile) {
+        // User is authenticated but has no profile (Firestore doc)
+        return <ProfileSetup />;
     }
 
     return (

@@ -6,9 +6,7 @@ import { Asset, KeyItem } from "@/types";
 import { subscribeToAssets, subscribeToKeys } from "@/lib/firestore/services";
 import { useAuth } from "./AuthContext";
 
-// Hardcoded Organization ID for single-tenant / mvp scope
-// In a real multi-tenant app, this would come from the user's profile or URL params.
-const CURRENT_ORG_ID = "DEMO_ORG_1";
+
 
 interface InventoryContextType {
     assets: Asset[];
@@ -42,6 +40,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
     // Subscriptions
     useEffect(() => {
         if (!user || !profile?.orgId) {
+            setAssets([]);
+            setKeys([]);
             setLoading(false);
             return;
         }

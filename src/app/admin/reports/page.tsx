@@ -244,6 +244,10 @@ export default function ReportsPage() {
                                                 : meta.dueDate ? meta.dueDate.toDate().toLocaleDateString("en-GB") : "Indefinite"}
                                         </span>
                                     </div>
+                                    <div>
+                                        <span className="text-xs text-gray-400 block">Company</span>
+                                        <span className="text-gray-800 dark:text-gray-200 font-medium truncate">{meta.holderCompany || "-"}</span>
+                                    </div>
                                 </div>
                             </div>
                         );

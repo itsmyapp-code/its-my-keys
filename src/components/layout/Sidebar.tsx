@@ -12,7 +12,7 @@ import { Asset } from "@/types";
 
 const NAV_ITEMS = [
     { label: "Dashboard", href: "/" },
-    // { label: "Assets", href: "/admin/assets" }, // Hidden per request
+    { label: "Assets", href: "/admin/assets" },
     { label: "Add Key", href: "/admin/add-key" },
     { label: "Audit Mode", href: "/admin/audit", className: "hidden sm:flex" }, // Hidden on mobile
     { label: "Active Loans", href: "/admin/reports" },

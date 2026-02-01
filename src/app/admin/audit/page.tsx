@@ -9,12 +9,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// Hardcoded for MVP
-const CURRENT_ORG_ID = "DEMO_ORG_1";
+
 
 export default function AuditPage() {
     const { assets, keys, loading } = useInventory();
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
 
     // Audit State
     const [auditStartedAt] = useState(Timestamp.now());
@@ -82,7 +81,9 @@ export default function AuditPage() {
                     if (i < entered) {
                         // Verified
                         // Fire and forget update
-                        updateKeyAuditDate(CURRENT_ORG_ID, key.id).catch(console.error);
+                        if (profile?.orgId) {
+                            updateKeyAuditDate(profile.orgId, key.id).catch(console.error);
+                        }
                     } else {
                         // Missing
                         missingKeys.push(key.id);
@@ -91,11 +92,13 @@ export default function AuditPage() {
             }
 
             // Create Audit Record
-            await createAudit(CURRENT_ORG_ID, {
-                date: Timestamp.now(),
-                performedBy: user?.uid || "Unknown",
-                missingKeys
-            });
+            if (profile?.orgId) {
+                await createAudit(profile.orgId, {
+                    date: Timestamp.now(),
+                    performedBy: user?.uid || "Unknown",
+                    missingKeys
+                });
+            }
 
             // Generate PDF Report
             const doc = new jsPDF();
