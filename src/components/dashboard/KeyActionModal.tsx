@@ -218,7 +218,7 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId, allAssets = []
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
                                     {keyItem.name || "Unknown Key"}
                                 </h3>
-                                {parentAsset && (
+                                {parentAsset && parentAsset.name !== keyItem.name && (
                                     <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
                                         ({parentAsset.name})
                                     </p>

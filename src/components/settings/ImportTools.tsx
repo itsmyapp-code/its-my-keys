@@ -82,7 +82,7 @@ export function ImportTools() {
                 for (let i = 0; i < quantity; i++) {
                     await AssetService.createAsset({
                         orgId: profile!.orgId,
-                        name: key_id,
+                        name: asset_name, // Use the Name from CSV, not the ID
                         type: AssetType.KEY,
                         status: AssetStatus.AVAILABLE,
                         area: location,
