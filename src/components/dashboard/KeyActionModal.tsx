@@ -198,29 +198,39 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId, allAssets = []
                 </div>
 
                 {/* Key Info Badge */}
-                <div className="mb-6">
-                    <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                            {/* Dynamic Icon/Text based on Type */}
-                            <span className="font-bold text-xs">
-                                {keyItem.type === 'VEHICLE' ? '🚗' :
-                                    keyItem.type === 'IT_DEVICE' ? '💻' :
-                                        (meta.keyCode || keyItem.id.substring(0, 4))}
-                            </span>
+                <div className="mb-6 rounded-xl bg-gray-50 p-4 border border-gray-100 dark:bg-gray-700/50 dark:border-gray-600">
+                    <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-2xl dark:bg-blue-900/50">
+                            {keyItem.type === 'VEHICLE' ? '🚗' :
+                                keyItem.type === 'IT_DEVICE' ? '💻' :
+                                    keyItem.type === 'RENTAL' ? '🏠' : '🔑'}
                         </div>
-                        <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">
-                                {keyItem.name || "Unknown Key"}
-                            </h3>
-                            {parentAsset && (
-                                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                    {parentAsset.name}
+                        <div className="flex-1 space-y-2">
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">ID / Tag</span>
+                                <span className="font-mono font-medium text-gray-900 dark:text-white bg-white px-2 py-0.5 rounded border border-gray-200 dark:bg-gray-800 dark:border-gray-600">
+                                    {meta.keyCode || keyItem.id.substring(0, 8)}
+                                </span>
+                            </div>
+
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Name</span>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                                    {keyItem.name || "Unknown Key"}
+                                </h3>
+                                {parentAsset && (
+                                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                        ({parentAsset.name})
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Location</span>
+                                <p className="font-medium text-gray-800 dark:text-gray-200">
+                                    {meta.location || parentAsset?.area || "General Stock"}
                                 </p>
-                            )}
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {meta.location || parentAsset?.area || "Unknown Location"}
-                                {meta.keyCode && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-600 dark:bg-gray-700 dark:text-gray-300">Tag: {meta.keyCode}</span>}
-                            </p>
+                            </div>
                         </div>
                     </div>
                 </div>
