@@ -77,9 +77,18 @@ export function ImportTools() {
                 }
 
                 addLog(`Creating ${quantity} keys for tag ${key_id}...`);
-                const isMaster = master_system?.toLowerCase() === 'yes' || master_system?.toLowerCase() === 'true';
+                const isMaster = ['yes', 'true', 'y'].includes(master_system?.toLowerCase() || "");
 
                 for (let i = 0; i < quantity; i++) {
+                    // Fuzzy Key Type Matching
+                    let typeToSave = "EURO_LOCK";
+                    const t = key_type?.toUpperCase() || "";
+                    if (t.includes("EURO")) typeToSave = "EURO_LOCK";
+                    else if (t.includes("CYLINDER")) typeToSave = "CYLINDER";
+                    else if (t.includes("PADLOCK")) typeToSave = "PADLOCK";
+                    else if (t.includes("ELECTRONIC")) typeToSave = "ELECTRONIC";
+                    else if (['OTHER', 'MORTICE', 'RIM'].some(x => t.includes(x))) typeToSave = "OTHER";
+
                     await AssetService.createAsset({
                         orgId: profile!.orgId,
                         name: asset_name, // Use the Name from CSV, not the ID
@@ -94,9 +103,7 @@ export function ImportTools() {
                         },
                         qrCode: qr_code || undefined,
                         // New Fields
-                        keyType: (key_type && ['EURO_LOCK', 'CYLINDER', 'PADLOCK', 'ELECTRONIC', 'OTHER'].includes(key_type.toUpperCase()))
-                            ? key_type.toUpperCase() as any
-                            : 'EURO_LOCK',
+                        keyType: typeToSave as any,
                         notes: notes || undefined,
                         isMasterSystem: isMaster,
                         keySupplier: (isMaster && supplier) ? supplier : undefined
