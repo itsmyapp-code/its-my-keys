@@ -342,9 +342,12 @@ function KeyGroupCard({ group, onAction }: {
   const checkedOutKeys = group.keys.filter(k => k.status === "CHECKED_OUT" || k.status === "MISSING");
   const total = group.keys.length;
 
-  // Key sorting: Numerically if possible, else alphabetical
+  // Key sorting: Numerically by Key Code (ID) if possible
   const sortKeys = (a: Asset, b: Asset) => {
-    return a.name.localeCompare(b.name, undefined, { numeric: true });
+    // Try to get keyCode or fall back to name
+    const idA = a.metaData?.keyCode || a.name;
+    const idB = b.metaData?.keyCode || b.name;
+    return idA.localeCompare(idB, undefined, { numeric: true });
   };
 
   availableKeys.sort(sortKeys);
@@ -402,9 +405,9 @@ function KeyGroupCard({ group, onAction }: {
                   key={k.id}
                   onClick={() => onAction(k)}
                   className="rounded border border-green-200 bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40"
-                  title={`Issue Key ${k.name}`}
+                  title={`Issue Key ${k.name} (Tag: ${k.metaData?.keyCode})`}
                 >
-                  {k.name}
+                  {k.metaData?.keyCode || k.name}
                 </button>
               ))}
             </div>
