@@ -16,9 +16,9 @@ const NAV_ITEMS = [
     { label: "Add Key", href: "/admin/add-key" },
     { label: "Audit Mode", href: "/admin/audit", className: "hidden sm:flex" }, // Hidden on mobile
     { label: "Active Loans", href: "/admin/reports" },
-    { label: "Import Keys", href: "/admin/import" },
-    { label: "Team", href: "/admin/team" },
-    { label: "Billing", href: "/admin/billing" },
+    // { label: "Import Keys", href: "/admin/import" },
+    // { label: "Team", href: "/admin/team" },
+    // { label: "Billing", href: "/admin/billing" },
     // { label: "Settings", href: "/admin/settings" }, // Moved to Gear Icon
 ];
 

@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TeamService } from "@/lib/services/TeamService";
 import { MemberProfile, Role } from "@/types";
 
-export default function TeamPage() {
+export function TeamSettings() {
     const { user, profile } = useAuth();
     const [members, setMembers] = useState<MemberProfile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -69,9 +69,9 @@ export default function TeamPage() {
     if (loading) return <div className="p-6">Loading team...</div>;
 
     return (
-        <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold dark:text-white">Team Management</h1>
+                <h2 className="text-xl font-bold dark:text-white">Team Management</h2>
                 <div className="text-sm text-gray-500">
                     Organization ID: <span className="font-mono">{profile?.orgId}</span>
                 </div>
@@ -79,7 +79,7 @@ export default function TeamPage() {
 
             {/* Invite Section */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold mb-4 dark:text-white">Add Team Member</h2>
+                <h3 className="text-lg font-semibold mb-4 dark:text-white">Add Team Member</h3>
                 <form onSubmit={handleInvite} className="flex gap-4 items-end">
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>

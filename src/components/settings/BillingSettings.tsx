@@ -1,26 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
 
 // Initialize Stripe outside of component to avoid recreating it
-// Replace with your actual publishable key
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_sample_key");
 
-export default function BillingPage() {
+export function BillingSettings() {
     const { user, profile } = useAuth();
     const [loading, setLoading] = useState(false);
 
-    // This would typically involve fetching current subscription status from Firestore
-    // e.g. profile?.subscriptionStatus, profile?.planId
-
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+        <div className="space-y-6">
+            <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                 Billing & Subscription
-            </h1>
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Current Plan Card */}

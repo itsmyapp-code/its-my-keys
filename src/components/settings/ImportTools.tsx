@@ -2,18 +2,13 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { createAsset, createKey } from "@/lib/firestore/services";
-import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
-import { Asset, AssetType, AssetStatus } from "@/types";
+import { AssetType, AssetStatus } from "@/types";
 
-export default function ImportPage() {
+export function ImportTools() {
     const { user, profile } = useAuth();
     const [csvContent, setCsvContent] = useState("");
     const [importing, setImporting] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
-
-    // New state for Import Type
     const [importType, setImportType] = useState<'KEYS' | 'ASSETS' | 'MEMBERS'>('KEYS');
 
     const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
@@ -166,8 +161,8 @@ export default function ImportPage() {
     };
 
     return (
-        <div className="mx-auto max-w-3xl p-6">
-            <h1 className="mb-4 text-2xl font-bold dark:text-white">Bulk Import</h1>
+        <div className="space-y-6">
+            <h2 className="text-xl font-bold dark:text-white">Bulk Import</h2>
 
             {/* Type Selector */}
             <div className="mb-6 flex gap-4 border-b border-gray-200 dark:border-gray-700 pb-4">

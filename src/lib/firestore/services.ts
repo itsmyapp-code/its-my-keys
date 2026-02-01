@@ -9,7 +9,8 @@ import {
     where,
     Unsubscribe,
     Timestamp,
-    addDoc
+    addDoc,
+    orderBy
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { Asset, KeyItem, Audit, KeyStatus, LoanType } from "@/types";
@@ -106,6 +107,14 @@ export const createAudit = async (orgId: string, audit: Omit<Audit, "id">) => {
     // or sub-collection of the organization. Let's start with subcollection of Org for Audits as they are not "Assets".
     const auditsRef = collection(db, "organizations", orgId, "audits").withConverter(auditConverter);
     await addDoc(auditsRef, { ...audit, id: "" } as Audit);
+};
+
+export const subscribeToAudits = (orgId: string, callback: (audits: Audit[]) => void, onError?: (error: Error) => void): Unsubscribe => {
+    const auditsRef = collection(db, "organizations", orgId, "audits").withConverter(auditConverter);
+    const q = query(auditsRef, orderBy("date", "desc"));
+    return onSnapshot(q, (snapshot) => {
+        callback(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Audit));
+    }, onError);
 };
 
 export const updateKeyAuditDate = async (orgId: string, keyId: string) => {
