@@ -12,29 +12,16 @@ interface KeyActionModalProps {
     isOpen: boolean;
     onClose: () => void;
     orgId: string;
+    allAssets?: any[]; // Optional for immediate lookup
 }
 
-export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionModalProps) {
-    const [parentAsset, setParentAsset] = useState<any>(null);
+export function KeyActionModal({ keyItem, isOpen, onClose, orgId, allAssets = [] }: KeyActionModalProps) {
+    // Derived parent asset (immediate lookup)
+    const parentAsset = keyItem?.metaData?.assetId
+        ? allAssets.find(a => a.id === keyItem.metaData.assetId)
+        : null;
+
     const [loading, setLoading] = useState(false);
-
-    // Fetch Parent Asset Info
-    React.useEffect(() => {
-        const fetchParent = async () => {
-            if (keyItem?.metaData?.assetId) {
-                try {
-                    const snap = await AssetService.getAsset(keyItem.metaData.assetId);
-                    if (snap) {
-                        setParentAsset(snap);
-                    }
-                } catch (e) { console.error(e); }
-            }
-        };
-        // actually let's just stick to displaying what we have first, fetching might be slow/complex for this step without checking service
-        // checking service first
-    }, [keyItem]);
-
-    // Better approach: Just use what we have, or if we really need it, Use AssetService.getAsset if available.
     const [holderName, setHolderName] = useState("");
     const [holderCompany, setHolderCompany] = useState(""); // New field
     const [duration, setDuration] = useState<string>("1_HOUR"); // 1_HOUR, 4_HOURS, EOD, INDEFINITE
@@ -223,8 +210,13 @@ export function KeyActionModal({ keyItem, isOpen, onClose, orgId }: KeyActionMod
                         </div>
                         <div>
                             <h3 className="font-semibold text-gray-900 dark:text-white">
-                                {parentAsset ? parentAsset.name : (keyItem.name || "Unknown Key")}
+                                {keyItem.name || "Unknown Key"}
                             </h3>
+                            {parentAsset && (
+                                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                    {parentAsset.name}
+                                </p>
+                            )}
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 {meta.location || parentAsset?.area || "Unknown Location"}
                                 {meta.keyCode && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-mono text-gray-600 dark:bg-gray-700 dark:text-gray-300">Tag: {meta.keyCode}</span>}

@@ -265,6 +265,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             setSelectedAsset(null);
                         }}
                         orgId={profile?.orgId || ""}
+                        allAssets={assets}
                     />
                 )
             }
