@@ -2,7 +2,9 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { adminDb } from '@/lib/firebase/admin';
+import { getAdminDb } from '@/lib/firebase/admin';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     const body = await req.text();
@@ -42,6 +44,7 @@ export async function POST(req: Request) {
 
             if (orgId) {
                 // Update Firestore
+                const adminDb = getAdminDb();
                 await adminDb.collection('organizations').doc(orgId).update({
                     accountType: 'PRO',
                     subscriptionStatus: 'active',

@@ -249,7 +249,7 @@ export default function AuditPage() {
                             <thead className="bg-gray-50 text-xs text-gray-500 uppercase dark:bg-gray-900/50 dark:text-gray-400">
                                 <tr>
                                     <th className="px-6 py-3 w-1/4">Key ID / Code</th>
-                                    <th className="px-6 py-3 w-1/3">Associated Asset</th>
+                                    <th className="px-6 py-3 w-1/3">Key Name</th>
                                     <th className="px-6 py-3 text-center">Expected</th>
                                     <th className="px-6 py-3 text-center">Counted</th>
                                 </tr>
@@ -264,7 +264,15 @@ export default function AuditPage() {
                                         const isOver = entered > expected;
 
                                         // Get human readable asset names
-                                        const assetNames = Array.from(new Set(items.map(k => getAssetName(k)))).join(", ");
+                                        const keyNames = Array.from(new Set(items.map(k => k.name))).join(", ");
+                                        const parentAssets = Array.from(new Set(items.map(k => {
+                                            if (k.metaData?.assetId) {
+                                                const asset = assets.find(a => a.id === k.metaData?.assetId);
+                                                return asset ? asset.name : null;
+                                            }
+                                            return null;
+                                        }).filter(Boolean))).join(", ");
+
                                         const location = items[0]?.area || items[0]?.metaData?.location;
 
                                         return (
@@ -275,8 +283,9 @@ export default function AuditPage() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="font-medium text-gray-900 dark:text-white">{assetNames}</div>
-                                                    {location && <div className="text-xs text-gray-500">{location}</div>}
+                                                    <div className="font-medium text-gray-900 dark:text-white">{keyNames}</div>
+                                                    {parentAssets && <div className="text-xs text-gray-500">Opens: {parentAssets}</div>}
+                                                    {location && <div className="text-xs text-gray-500">Location: {location}</div>}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className="text-lg font-semibold text-gray-600 dark:text-gray-400">{expected}</span>
