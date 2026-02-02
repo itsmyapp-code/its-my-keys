@@ -6,7 +6,7 @@ import { TeamService } from "@/lib/services/TeamService";
 import { MemberProfile, Role } from "@/types";
 
 export function TeamSettings() {
-    const { user, profile } = useAuth();
+    const { user, profile, organization } = useAuth();
     const [members, setMembers] = useState<MemberProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const [inviteEmail, setInviteEmail] = useState("");
