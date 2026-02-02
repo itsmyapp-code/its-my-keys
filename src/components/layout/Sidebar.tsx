@@ -114,7 +114,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <div className="flex items-center gap-2">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                                src="/logo.jpg"
+                                src="/logo.png"
                                 alt="ItsMyKeys Logo"
                                 className="h-10 w-auto rounded-lg"
                             />

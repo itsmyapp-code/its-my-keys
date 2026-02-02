@@ -37,6 +37,14 @@ export function TeamSettings() {
         setSuccess("");
         if (!profile?.orgId) return;
 
+        // Pilot Constraint Check: Max 2 Team Members (Total) i.e. 1 Admin + 1 Additional
+        if (organization?.accountType === 'TRIAL_PILOT') {
+            if (members.length >= 2) {
+                setError("Free Tier Limit: You can only have 1 additional team member. Upgrade to Pro to add more.");
+                return;
+            }
+        }
+
         try {
             await TeamService.inviteMember(inviteEmail, "WORKER", profile.orgId);
             setSuccess("User added to team successfully!");

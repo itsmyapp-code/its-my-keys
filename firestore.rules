@@ -38,6 +38,12 @@ service cloud.firestore {
       allow create: if request.auth != null;
       // Only Admins can update their org details
       allow update: if request.auth != null && isOrgAdmin(orgId);
+
+      // AUDITS Sub-collection
+      match /audits/{auditId} {
+        allow read: if request.auth != null && belongsToOrg(orgId);
+        allow create: if request.auth != null && belongsToOrg(orgId);
+      }
     }
 
     // ASSETS Collection (Polymorphic)

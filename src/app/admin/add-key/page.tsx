@@ -74,6 +74,14 @@ export default function AddKeyPage() {
                 throw new Error("Key ID and Door/Asset Name are required.");
             }
 
+            // Duplicate QR Check
+            if (formData.qrCode) {
+                const existingQr = assets.find(a => a.qrCode === formData.qrCode || a.metaData?.keyCode === formData.qrCode);
+                if (existingQr) {
+                    throw new Error(`QR Code already assigned to "${existingQr.name}". Cannot add duplicate.`);
+                }
+            }
+
             // 1. Find or Create Asset
             let assetId = "";
             const existingAsset = assets.find(a => a.name.toLowerCase() === formData.assetName.toLowerCase());

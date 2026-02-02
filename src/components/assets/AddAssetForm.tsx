@@ -45,6 +45,15 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
             }
         }
 
+        // Duplicate QR Check
+        if (qrCode) {
+            const existingAsset = assets.find(a => a.qrCode === qrCode || a.metaData?.keyCode === qrCode);
+            if (existingAsset) {
+                setError(`QR Code already assigned to "${existingAsset.name}". Cannot duplicate.`);
+                return;
+            }
+        }
+
         setLoading(true);
 
         try {
@@ -65,13 +74,8 @@ export function AddAssetForm({ onSuccess }: { onSuccess?: () => void }) {
             // Reset Form
             setName("");
             setQrCode("");
-            setQrCode("");
             setMetadata({});
             // Reset New Fields
-            setNotes("");
-            setIsMasterSystem(false);
-            setKeySupplier("");
-            if (onSuccess) onSuccess();
             setNotes("");
             setIsMasterSystem(false);
             setKeySupplier("");

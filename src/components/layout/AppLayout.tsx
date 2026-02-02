@@ -132,7 +132,7 @@ function LoginScreen() {
                 <div className="mb-6 flex justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                        src="/logo.jpg"
+                        src="/logo.png"
                         alt="ItsMyKeys Logo"
                         className="h-20 w-auto rounded-xl shadow-lg"
                     />

@@ -226,9 +226,7 @@ function AssetCard({ asset, onAction }: { asset: Asset; onAction: () => void }) 
                     </div>
 
                     {/* Secondary Type-Specific Info */}
-                    {asset.type === AssetType.KEY && (
-                        <div className="text-sm text-gray-500">{meta.location || "Unknown Location"}</div>
-                    )}
+                    {/* Key Location moved to details block */}
                     {asset.type === AssetType.IT_DEVICE && (
                         <div className="text-sm text-gray-500">{meta.modelName || "Std Device"}</div>
                     )}
@@ -243,13 +241,7 @@ function AssetCard({ asset, onAction }: { asset: Asset; onAction: () => void }) 
 
             {/* Metadata Badges / Details */}
             <div className="space-y-2 mb-4 flex-grow">
-                {/* Key Code */}
-                {asset.type === AssetType.KEY && meta.keyCode && (
-                    <span className="inline-block px-2 py-0.5 bg-secondary rounded text-xs font-mono font-medium text-purple-600 dark:text-purple-400">
-                        {meta.keyCode}
-                    </span>
-                )}
-                {/* Serial/Tag */}
+                {/* IT Devices */}
                 {asset.type === AssetType.IT_DEVICE && (meta.serialNumber || meta.assetTag) && (
                     <div className="flex flex-wrap gap-2 text-xs">
                         {meta.assetTag && <span className="bg-secondary px-1.5 py-0.5 rounded font-mono">Tag: {meta.assetTag}</span>}
@@ -278,24 +270,54 @@ function AssetCard({ asset, onAction }: { asset: Asset; onAction: () => void }) 
 
                 {/* Key Specific Extended Details */}
                 {asset.type === AssetType.KEY && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                        {asset.keyType && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                {asset.keyType.replace('_', ' ')}
-                            </span>
+                    <div className="mt-3 space-y-2 bg-gray-50/50 p-2 rounded-lg border border-gray-100 dark:bg-gray-800/50 dark:border-gray-700">
+                        {/* QR Code */}
+                        {(asset.qrCode || meta.keyCode) && (
+                            <div className="flex items-center gap-2 text-xs">
+                                <span className="text-gray-500 w-16 shrink-0">QR/ID:</span>
+                                <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 dark:bg-gray-900 dark:border-gray-600 font-mono text-purple-600 dark:text-purple-400 select-all">
+                                    {asset.qrCode || meta.keyCode}
+                                </code>
+                            </div>
                         )}
-                        {asset.isMasterSystem && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800" title={`Supplier: ${asset.keySupplier || 'Unknown'}`}>
-                                Master System {asset.keySupplier ? `(${asset.keySupplier})` : ''}
-                            </span>
+
+                        {/* Location */}
+                        {meta.location && (
+                            <div className="flex items-center gap-2 text-xs">
+                                <span className="text-gray-500 w-16 shrink-0">Location:</span>
+                                <span className="font-medium text-foreground">{meta.location}</span>
+                            </div>
                         )}
+
+                        {/* Type & System */}
+                        <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-200/50 dark:border-gray-700/50 mt-1">
+                            {asset.keyType && (
+                                <div className="flex items-center gap-2 text-xs">
+                                    <span className="text-gray-500">Type:</span>
+                                    <span className="font-medium text-foreground capitalize">{asset.keyType.replace(/_/g, ' ').toLowerCase()}</span>
+                                </div>
+                            )}
+
+                            {asset.isMasterSystem && (
+                                <div className="flex items-center gap-2 text-xs w-full">
+                                    <span className="text-gray-500">System:</span>
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
+                                        Master System
+                                        {asset.keySupplier && <span className="font-bold">({asset.keySupplier})</span>}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
-                {/* Notes (Collapsed/Truncated) */}
+                {/* Notes (Full View) */}
                 {asset.notes && (
-                    <div className="mt-2 text-xs text-gray-500 italic truncate" title={asset.notes}>
-                        "{asset.notes}"
+                    <div className="mt-3 text-xs bg-yellow-50/50 dark:bg-yellow-900/10 p-2 rounded border border-yellow-100 dark:border-yellow-900/20">
+                        <div className="text-[10px] uppercase font-bold text-yellow-600/70 mb-0.5">Notes</div>
+                        <div className="text-gray-700 dark:text-gray-300 italic whitespace-pre-wrap leading-relaxed">
+                            {asset.notes}
+                        </div>
                     </div>
                 )}
             </div>
