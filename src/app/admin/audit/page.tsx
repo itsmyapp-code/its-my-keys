@@ -264,7 +264,7 @@ export default function AuditPage() {
                                             return null;
                                         }).filter(Boolean))).join(", ");
 
-                                        const location = items[0]?.area || items[0]?.metaData?.location;
+                                        const location = items[0]?.metaData?.location || items[0]?.area;
 
                                         return (
                                             <tr key={code} className={`transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 ${isMatch ? "bg-green-50/30 dark:bg-green-900/5" : ""}`}>
