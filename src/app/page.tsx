@@ -456,10 +456,11 @@ function KeyGroupCard({ group, onAction }: {
                 <button
                   key={k.id}
                   onClick={() => onAction(k)}
-                  className="rounded border border-green-200 bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40"
+                  className="rounded border border-green-200 bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 flex flex-col items-start gap-0.5"
                   title={`Issue ${k.name} (ID: ${k.qrCode || k.metaData?.keyCode || "N/A"})`}
                 >
-                  {k.name}
+                  <span className="font-bold">{k.name}</span>
+                  <span className="text-[10px] opacity-75 font-normal">{k.qrCode || k.metaData?.keyCode || "N/A"}</span>
                 </button>
               ))}
             </div>
