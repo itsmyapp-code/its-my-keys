@@ -90,7 +90,7 @@ export default function AuditPage() {
             doc.text(`Missing Keys: ${auditData.missingKeys.length}`, 14, 60);
             doc.setTextColor(0, 0, 0);
 
-            const missingData: any[] = [];
+            const missingData: (string | number | null)[][] = [];
             auditData.missingKeys.forEach(id => {
                 // Try to find key in current inventory to get details
                 // Note: If key was deleted since audit, this might be partial data
@@ -170,16 +170,7 @@ export default function AuditPage() {
         }
     };
 
-    // --- Helpers for Display ---
-    const getAssetName = (key: KeyItem) => {
-        // Prefer Asset ID lookup if available
-        if (key.metaData?.assetId) {
-            const asset = assets.find(a => a.id === key.metaData.assetId);
-            if (asset) return asset.name;
-        }
-        // Fallback to key name if it looks like an asset name, or parent name
-        return key.name || "Unknown Asset";
-    };
+
 
     if (loading) return <div className="p-10 text-center">Loading Inventory...</div>;
 

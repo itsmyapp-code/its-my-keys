@@ -17,10 +17,10 @@ export function AssetList() {
     const action = searchParams.get("action");
 
     useEffect(() => {
-        if (action === "scan") {
+        if (action === "scan" && !isScannerOpen) {
             setIsScannerOpen(true);
         }
-    }, [action]);
+    }, [action, isScannerOpen]);
 
     // Modal State
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
