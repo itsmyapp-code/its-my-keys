@@ -396,9 +396,9 @@ function KeyGroupCard({ group, onAction }: {
 
   // Key sorting: Numerically by Key Code (ID) if possible
   const sortKeys = (a: Asset, b: Asset) => {
-    // Try to get keyCode or fall back to name
-    const idA = a.metaData?.keyCode || a.name;
-    const idB = b.metaData?.keyCode || b.name;
+    // Try to get qrCode or keyCode or fall back to name
+    const idA = a.qrCode || a.metaData?.keyCode || a.name;
+    const idB = b.qrCode || b.metaData?.keyCode || b.name;
     return idA.localeCompare(idB, undefined, { numeric: true });
   };
 
@@ -457,9 +457,9 @@ function KeyGroupCard({ group, onAction }: {
                   key={k.id}
                   onClick={() => onAction(k)}
                   className="rounded border border-green-200 bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40"
-                  title={`Issue Key ${k.name} (Tag: ${k.metaData?.keyCode})`}
+                  title={`Issue ${k.name} (ID: ${k.qrCode || k.metaData?.keyCode || "N/A"})`}
                 >
-                  {k.metaData?.keyCode || k.name}
+                  {k.name}
                 </button>
               ))}
             </div>
@@ -482,8 +482,8 @@ function KeyGroupCard({ group, onAction }: {
                       <div className="font-medium text-gray-900 dark:text-white truncate">
                         {k.status === 'MISSING' ? 'MISSING' : k.metaData?.currentHolder || "Unknown"}
                       </div>
-                      {k.metaData?.keyCode && (
-                        <div className="text-xs text-gray-400">Tag: {k.metaData.keyCode}</div>
+                      {(k.qrCode || k.metaData?.keyCode) && (
+                        <div className="text-xs text-gray-400">ID: {k.qrCode || k.metaData?.keyCode}</div>
                       )}
 
                       <div className="mt-1 flex flex-col gap-0.5">
