@@ -145,19 +145,18 @@ export default function Dashboard() {
     const keys = grouped[AssetType.KEY];
 
     // Helper map for full asset lookup (for naming)
-    const assetMap = new Map(assets.map(a => [a.id, a]));
+    // const assetMap = new Map(assets.map(a => [a.id, a])); // Unused now
 
     keys.forEach(k => {
-      const parentId = k.metaData?.assetId;
-      // If we can't find a parent ID, we treat the key as its own group (legacy or orphan)
-      // We use 'orphan-' + k.id to ensure uniqueness
-      const groupKey = parentId || `orphan-${k.id}`;
+      // Group by Key Code (ID) or just use ID if unique to match Audit/Asset view concept
+      // "Keys are Assets" -> One card per key "type/definition" usually, but here likely 1:1 if unique IDs
+      // Use keyCode if available to group multiples (like in Audit), otherwise unique ID
+      const groupKey = k.metaData?.keyCode || k.id;
 
       if (!groups[groupKey]) {
-        const parent = assetMap.get(parentId);
         groups[groupKey] = {
           id: groupKey,
-          parentName: parent?.name || k.name || "Unknown Asset",
+          parentName: k.name || "Unknown Key", // Use Key Name as primary title
           location: k.metaData?.location || k.area || "General",
           keys: []
         };
