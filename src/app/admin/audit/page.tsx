@@ -275,7 +275,7 @@ export default function AuditPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="font-medium text-gray-900 dark:text-white">{keyNames}</div>
-                                                    {parentAssets && <div className="text-xs text-gray-500">Opens: {parentAssets}</div>}
+
                                                     {location && <div className="text-xs text-gray-500">Location: {location}</div>}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
