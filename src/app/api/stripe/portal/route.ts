@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 
 export async function POST(req: Request) {
     try {
@@ -9,6 +9,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing customerId' }, { status: 400 });
         }
 
+        const stripe = getStripe();
         const session = await stripe.billingPortal.sessions.create({
             customer: customerId,
             return_url: returnUrl,

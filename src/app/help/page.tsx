@@ -17,9 +17,6 @@ export default function HelpPage() {
                         <li>
                             <strong>Adding Keys:</strong> Go to "Add Key" to register a new physical key or asset. You can assign it a name, type, and area.
                         </li>
-                        <li>
-                            <strong>Printing Labels:</strong> Once a key is added, click the QR code icon to print a label. Attach this label to the physical key tag.
-                        </li>
                     </ul>
                 </section>
 

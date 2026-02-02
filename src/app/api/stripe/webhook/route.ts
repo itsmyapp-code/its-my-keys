@@ -1,7 +1,7 @@
 
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { getAdminDb } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +25,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Server config error' }, { status: 500 });
         }
 
+        const stripe = getStripe();
         event = stripe.webhooks.constructEvent(
             body,
             signature,

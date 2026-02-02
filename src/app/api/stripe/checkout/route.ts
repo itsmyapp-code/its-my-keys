@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe'; // You might need to adjust import path if lib is elsewhere
+import { getStripe } from '@/lib/stripe'; // You might need to adjust import path if lib is elsewhere
 // import { adminAuth, adminDb } from '@/lib/firebase/admin'; 
 // We are not using admin SDK in this simple MVP, relying on passed email/orgId.
 // In production, verify auth user more strictly.
@@ -13,6 +13,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Create Checkout Session
+        const stripe = getStripe();
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
             payment_method_types: ['card'],
