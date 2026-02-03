@@ -13,6 +13,8 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
     const [error, setError] = useState<string | null>(null);
     const [nfcStatus, setNfcStatus] = useState<"IDLE" | "SCANNING" | "ERROR" | "UNSUPPORTED">("IDLE");
     const [nfcError, setNfcError] = useState("");
+    const [lastKeyTime, setLastKeyTime] = useState(0);
+    const [barcodeBuffer, setBarcodeBuffer] = useState("");
 
     // Initialize NFC
     useEffect(() => {
@@ -63,6 +65,39 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
         startNfc();
     }, [isOpen, onScan, onClose]);
 
+    // Handle Keyboard Scanner (Wedge)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const currentTime = Date.now();
+            const timeDiff = currentTime - lastKeyTime;
+
+            // Scanners type very fast (usually < 50ms between keys)
+            // If it's manual typing (slow), we might want to reset, but for now 
+            // since this is a dedicated modal, we can be more permissive or just reset on long pauses.
+            if (timeDiff > 100) {
+                setBarcodeBuffer("");
+            }
+
+            setLastKeyTime(currentTime);
+
+            if (e.key === "Enter") {
+                if (barcodeBuffer.length > 0) {
+                    onScan(barcodeBuffer);
+                    onClose();
+                }
+                setBarcodeBuffer("");
+            } else if (e.key.length === 1) {
+                // Only add printable characters
+                setBarcodeBuffer(prev => prev + e.key);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, lastKeyTime, barcodeBuffer, onScan, onClose]);
+
     if (!isOpen) return null;
 
     const handleScan = (detectedCodes: { rawValue: string }[]) => {
@@ -96,10 +131,13 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
                 {/* Scanner Area */}
                 <div className="relative aspect-square w-full bg-black">
                     {error ? (
-                        <div className="flex h-full flex-col items-center justify-center p-6 text-center text-red-400">
-                            <p className="mb-2 text-xl">⚠️</p>
-                            <p>{error}</p>
-                            <p className="mt-2 text-sm text-gray-500">Please ensure camera permissions are allowed.</p>
+                        <div className="flex h-full flex-col items-center justify-center p-6 text-center text-gray-400">
+                            <div className="mb-4 rounded-full bg-gray-800 p-4">
+                                <span className="text-4xl">⌨️</span>
+                            </div>
+                            <p className="mb-2 text-xl font-medium text-white">Scanner Ready</p>
+                            <p className="text-sm">Camera not detected, but you can use your USB/Bluetooth scanner.</p>
+                            <p className="mt-4 text-xs text-red-400">Camera Error: {error}</p>
                         </div>
                     ) : (
                         <Scanner
@@ -128,14 +166,14 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
                 <div className="bg-gray-800 p-4 space-y-3">
                     <div className="text-center">
                         <p className="text-sm text-gray-400">
-                            Scan QR Code via Camera
+                            Scan QR Code via Camera or <span className="text-white font-medium">USB Scanner</span>
                         </p>
                     </div>
 
                     {/* NFC Indicator */}
                     <div className={`p-2 rounded-lg border flex items-center justify-center gap-2 ${nfcStatus === 'SCANNING' ? 'bg-blue-900/20 border-blue-500/30 text-blue-300' :
-                            nfcStatus === 'ERROR' ? 'bg-red-900/20 border-red-500/30 text-red-300' :
-                                'bg-gray-700/50 border-gray-600 text-gray-500'
+                        nfcStatus === 'ERROR' ? 'bg-red-900/20 border-red-500/30 text-red-300' :
+                            'bg-gray-700/50 border-gray-600 text-gray-500'
                         }`}>
                         {nfcStatus === 'SCANNING' && (
                             <span className="relative flex h-2 w-2 mr-1">
