@@ -81,8 +81,9 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
 
             setLastKeyTime(currentTime);
 
-            if (e.key === "Enter") {
+            if (e.key === "Enter" || e.key === "Tab") {
                 if (barcodeBuffer.length > 0) {
+                    e.preventDefault(); // Prevent tab focus change or form submit
                     onScan(barcodeBuffer);
                     onClose();
                 }
@@ -109,6 +110,13 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
         }
     };
 
+    const handleManualSubmit = () => {
+        if (barcodeBuffer.length > 0) {
+            onScan(barcodeBuffer);
+            onClose();
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
             <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-gray-900 border border-gray-700 shadow-2xl">
@@ -129,6 +137,21 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
 
                 {/* Scanner Area */}
                 <div className="relative aspect-square w-full bg-black">
+                    {/* Live Buffer Feedback (Overlay for BOTH Camera and Error states) */}
+                    {barcodeBuffer && (
+                        <div className="absolute top-4 left-4 right-4 z-20">
+                            <div className="bg-black/80 rounded p-2 text-white font-mono text-lg break-all border border-blue-500/50 shadow-lg text-center backdrop-blur-md">
+                                {barcodeBuffer}
+                            </div>
+                            <button
+                                onClick={handleManualSubmit}
+                                className="mt-2 w-full bg-blue-600/90 hover:bg-blue-700 text-white rounded py-2 text-sm font-bold shadow-lg backdrop-blur-md transition-all"
+                            >
+                                Process Code ⏎
+                            </button>
+                        </div>
+                    )}
+
                     {error ? (
                         <div className="flex h-full flex-col items-center justify-center p-6 text-center text-gray-400">
                             <div className="mb-4 rounded-full bg-gray-800 p-4">
@@ -136,7 +159,7 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
                             </div>
                             <p className="mb-2 text-xl font-medium text-white">Scanner Ready</p>
                             <p className="text-sm">Camera not detected, but you can use your USB/Bluetooth scanner.</p>
-                            <p className="mt-4 text-xs text-red-400">Camera Error: {error}</p>
+                            <p className="mt-4 text-xs text-red-400 opacity-60">Camera Error: {error}</p>
                         </div>
                     ) : (
                         <Scanner
