@@ -5,7 +5,7 @@ import { useInventory } from "@/contexts/InventoryContext"; // Use InventoryCont
 import { Asset, AssetType, AssetStatus } from "@/types";
 import { AssetActionModal } from "./AssetActionModal";
 import { QRScannerModal } from "@/components/common/QRScannerModal";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 export function AssetList() {
     const { assets, loading, search } = useInventory(); // Use context
@@ -85,6 +85,17 @@ export function AssetList() {
 
     // ... inside return
     // Search Bar Update
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const handleScannerClose = () => {
+        setIsScannerOpen(false);
+        // Remove ?action=scan from URL
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("action");
+        router.replace(`${pathname}?${params.toString()}`);
+    };
+
     return (
         <div className="space-y-8 pb-20">
             {/* Search */}
@@ -120,7 +131,7 @@ export function AssetList() {
 
             <QRScannerModal
                 isOpen={isScannerOpen}
-                onClose={() => setIsScannerOpen(false)}
+                onClose={handleScannerClose}
                 onScan={handleScan}
             />
 
