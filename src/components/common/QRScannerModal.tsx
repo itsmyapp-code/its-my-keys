@@ -74,9 +74,8 @@ export function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps)
             const timeDiff = currentTime - lastKeyTime;
 
             // Scanners type very fast (usually < 50ms between keys)
-            // If it's manual typing (slow), we might want to reset, but for now 
-            // since this is a dedicated modal, we can be more permissive or just reset on long pauses.
-            if (timeDiff > 100) {
+            // We increase timeout to 500ms to handle slower scanners/PCs or fast manual entry.
+            if (timeDiff > 500) {
                 setBarcodeBuffer("");
             }
 
